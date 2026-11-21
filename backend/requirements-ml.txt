@@ -1,0 +1,7 @@
+# Intelligence modules (Phase 3+). Kept separate so the Phase 1 core installs fast.
+-r requirements.txt
+numpy>=1.26
+pandas>=2.2
+scikit-learn>=1.5
+xgboost>=2.1
+pymoo>=0.6.1

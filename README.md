@@ -1,0 +1,115 @@
+# SimuCore
+
+**An Intelligent, Self-Calibrating 3D Digital Twin Framework for Banking Infrastructure**
+
+SimuCore mirrors a banking software estate — microservices, databases, servers,
+network devices and their dependencies — in an interactive 3D environment. It
+monitors the twin in real time, predicts failures, analyses how failures
+propagate through dependencies, runs what-if simulations, optimises resources
+with NSGA-II, calibrates itself from actual-vs-predicted outcomes and explains
+every recommendation.
+
+> **Status: Phase 1 — Foundation.** The system runs against a *simulated* bank.
+> Production data enters later only through secure, read-only telemetry adapters.
+
+## Capabilities and status
+
+| Capability | Module | Phase | Status |
+|---|---|---|---|
+| Real-time infrastructure monitoring | `backend/app/twin`, `adapters` | 1 | ✅ working (simulated source) |
+| Interactive 3D digital twin | `frontend/src/scene` | 1 | ✅ working |
+| Dependency-aware failure propagation | `backend/app/propagation` | 1 / 4 | ✅ v1 (weighted max-product BFS) |
+| Explainable recommendations | `backend/app/explain`, `recommendation` | 1 / 5 | ✅ propagation explanations; rest in P5 |
+| AI anomaly & failure prediction | `backend/app/ml` | 3 | 📐 contract defined |
+| What-if simulation (SimPy) | `backend/app/simulation/whatif.py` | 4 | 📐 contract defined |
+| Resource optimisation (NSGA-II) | `backend/app/optimization` | 5 | 📐 contract defined |
+| Self-calibration | `backend/app/calibration` | 5 | 📐 contract defined |
+
+## Repository layout
+
+```
+SimuCore/
+├── backend/                  FastAPI service (Python)
+│   ├── app/
+│   │   ├── api/v1/           REST routes (health, twin, propagation) + WebSocket
+│   │   ├── core/             config, logging, event bus
+│   │   ├── domain/           models, inter-module contracts, topology graph
+│   │   ├── adapters/         read-only telemetry adapters (simulated, prometheus)
+│   │   ├── simulation/       reference bank topology, synthetic telemetry, SimPy what-if
+│   │   ├── twin/             twin state + synchroniser
+│   │   ├── propagation/      failure propagation engine
+│   │   ├── ml/               anomaly detection & failure prediction   (P3)
+│   │   ├── optimization/     NSGA-II optimiser                         (P5)
+│   │   ├── calibration/      self-calibration loop                     (P5)
+│   │   ├── explain/          explanation builders
+│   │   ├── recommendation/   recommendation service                    (P5)
+│   │   ├── db/               SQLAlchemy persistence                    (P2)
+│   │   └── main.py           application factory
+│   ├── tests/                pytest suite
+│   └── requirements*.txt
+├── frontend/                 React + TypeScript + React Three Fiber
+│   └── src/{scene,components,store,services,types}
+├── database/schema/          PostgreSQL DDL (auto-applied by the container)
+├── infra/                    docker-compose, Prometheus, Grafana provisioning
+└── docs/                     architecture & design documents
+```
+
+## Documentation
+
+1. [System architecture](docs/01-system-architecture.md)
+2. [Backend & frontend architecture](docs/02-backend-frontend-architecture.md)
+3. [Twin synchronisation & secure adapters](docs/03-twin-synchronization.md)
+4. [Module / algorithm communication](docs/04-module-communication.md)
+5. [Database schema](docs/05-database-schema.md)
+6. [3D user interface](docs/06-3d-user-interface.md)
+7. [Development roadmap](docs/07-roadmap.md)
+
+## Getting started (local, Windows PowerShell)
+
+Prerequisites: Python 3.11+, Node.js 20+. Docker Desktop is optional (needed
+only for PostgreSQL / Prometheus / Grafana).
+
+```powershell
+# 1. Backend
+cd backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements-dev.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+```powershell
+# 2. Frontend (new terminal)
+cd frontend
+npm install
+npm run dev
+```
+
+Open http://localhost:5173 — the twin connects over WebSocket and starts
+updating every second. Click a component, then **Simulate failure → blast radius**.
+
+API docs: http://localhost:8000/docs · Prometheus metrics: http://localhost:8000/metrics/
+
+### Full stack with Docker
+
+```powershell
+copy .env.example .env
+docker compose -f infra/docker-compose.yml up --build
+```
+
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:8080 |
+| Backend API | http://localhost:8000/docs |
+| Prometheus | http://localhost:9090 |
+| Grafana | http://localhost:3000 (dashboard *SimuCore - Twin Overview*) |
+| PostgreSQL | localhost:5432 (schema from `database/schema/001_init.sql`) |
+
+### Tests
+
+```powershell
+cd backend; .\.venv\Scripts\python -m pytest -q
+cd frontend; npm run typecheck; npm run build
+```
+
+Optional ML stack for Phase 3+: `pip install -r requirements-ml.txt`.

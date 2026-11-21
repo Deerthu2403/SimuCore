@@ -1,0 +1,38 @@
+{
+  "uid": "simucore-overview",
+  "title": "SimuCore - Twin Overview",
+  "schemaVersion": 39,
+  "refresh": "5s",
+  "time": { "from": "now-15m", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "node",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(simucore_node_metric, node)",
+        "multi": true,
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "timeseries", "title": "CPU %", "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [{ "expr": "simucore_node_metric{metric=\"cpu_pct\", node=~\"$node\"}", "legendFormat": "{{node}}" }]
+    },
+    {
+      "type": "timeseries", "title": "Latency (ms)", "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [{ "expr": "simucore_node_metric{metric=\"latency_ms\", node=~\"$node\"}", "legendFormat": "{{node}}" }]
+    },
+    {
+      "type": "timeseries", "title": "Error rate", "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [{ "expr": "simucore_node_metric{metric=\"error_rate\", node=~\"$node\"}", "legendFormat": "{{node}}" }]
+    },
+    {
+      "type": "stat", "title": "Nodes not healthy", "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "targets": [{ "expr": "count(simucore_node_status >= 1) or vector(0)" }]
+    }
+  ]
+}
