@@ -1,0 +1,92 @@
+# Simulated bank: eight independent containers. Synthetic data only.
+#   docker compose up -d --build            start everything
+#   docker compose stop payment             stop one service; the others keep running
+#   docker compose kill account             crash one service
+#   docker compose start payment            bring it back
+# There is deliberately no depends_on: services tolerate missing dependencies at start-up.
+name: simucore-bank
+
+x-service: &service
+  restart: "no"          # failures must stay visible to the digital twin
+  init: true
+  networks: [bank]
+  mem_limit: 384m
+  cpus: 1.0
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+
+x-env: &env
+  BANK_INTERNAL_KEY: ${BANK_INTERNAL_KEY:?set BANK_INTERNAL_KEY in banking-sim/.env}
+  BANK_URL_AUTHENTICATION: http://bank-authentication:8101
+  BANK_URL_CUSTOMER: http://bank-customer:8102
+  BANK_URL_ACCOUNT: http://bank-account:8103
+  BANK_URL_TRANSACTION: http://bank-transaction:8104
+  BANK_URL_PAYMENT: http://bank-payment:8105
+  BANK_URL_FRAUD: http://bank-fraud:8106
+  BANK_URL_NOTIFICATION: http://bank-notification:8107
+  BANK_URL_DATABASE: http://bank-database:8108
+
+services:
+  authentication:
+    <<: *service
+    build: {context: ., args: {SERVICE: authentication}}
+    image: simucore/bank-authentication
+    container_name: bank-authentication
+    environment: *env
+    ports: ["127.0.0.1:8101:8101"]
+  customer:
+    <<: *service
+    build: {context: ., args: {SERVICE: customer}}
+    image: simucore/bank-customer
+    container_name: bank-customer
+    environment: *env
+    ports: ["127.0.0.1:8102:8102"]
+  account:
+    <<: *service
+    build: {context: ., args: {SERVICE: account}}
+    image: simucore/bank-account
+    container_name: bank-account
+    environment: *env
+    ports: ["127.0.0.1:8103:8103"]
+  transaction:
+    <<: *service
+    build: {context: ., args: {SERVICE: transaction}}
+    image: simucore/bank-transaction
+    container_name: bank-transaction
+    environment: *env
+    ports: ["127.0.0.1:8104:8104"]
+  payment:
+    <<: *service
+    build: {context: ., args: {SERVICE: payment}}
+    image: simucore/bank-payment
+    container_name: bank-payment
+    environment: *env
+    ports: ["127.0.0.1:8105:8105"]
+  fraud:
+    <<: *service
+    build: {context: ., args: {SERVICE: fraud}}
+    image: simucore/bank-fraud
+    container_name: bank-fraud
+    environment: *env
+    ports: ["127.0.0.1:8106:8106"]
+  notification:
+    <<: *service
+    build: {context: ., args: {SERVICE: notification}}
+    image: simucore/bank-notification
+    container_name: bank-notification
+    environment: *env
+    ports: ["127.0.0.1:8107:8107"]
+  database:
+    <<: *service
+    build: {context: ., args: {SERVICE: database}}
+    image: simucore/bank-database
+    container_name: bank-database
+    environment: *env
+    ports: ["127.0.0.1:8108:8108"]
+    volumes: ["bank-data:/data"]
+
+networks:
+  bank:
+
+volumes:
+  bank-data:

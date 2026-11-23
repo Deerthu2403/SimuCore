@@ -1,0 +1,5 @@
+.venv
+.runtime*
+tests
+results
+**/__pycache__

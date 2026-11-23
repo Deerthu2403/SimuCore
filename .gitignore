@@ -25,3 +25,6 @@ Thumbs.db
 .vscode/
 .idea/
 *.tsbuildinfo
+
+# Simulated bank runtime state
+.runtime*/

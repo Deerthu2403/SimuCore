@@ -58,14 +58,16 @@ class TwinSynchronizer:
         await self.adapter.close()
 
     async def tick(self) -> list[NodeState]:
-        samples = await self.adapter.poll()
-        changed = self.state.apply(samples)
-        changed += self.state.mark_stale(self.stale_after)
-        self.ticks += 1
-        if changed:
-            self._export(changed)
-            await self.bus.publish(Topics.TWIN_DELTA,
-                                   TwinDelta(version=self.state.version, states=changed))
+        changed: list[NodeState] = []
+        try:
+            changed = self.state.apply(await self.adapter.poll())
+        finally:  # a silent source must still age its nodes to "unknown"
+            changed += self.state.mark_stale(self.stale_after)
+            self.ticks += 1
+            if changed:
+                self._export(changed)
+                await self.bus.publish(Topics.TWIN_DELTA,
+                                       TwinDelta(version=self.state.version, states=changed))
         return changed
 
     async def _loop(self) -> None:

@@ -1,0 +1,371 @@
+{
+  "run_at": "2026-11-23T04:54:43+00:00",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "python": "3.13.7",
+  "mode": "local processes",
+  "passed": 23,
+  "total": 23,
+  "results": [
+    {
+      "code": "S01",
+      "title": "Health checks: all eight services live and ready",
+      "passed": true,
+      "seconds": 1.0,
+      "facts": {
+        "ready": 8
+      },
+      "error": null
+    },
+    {
+      "code": "S02",
+      "title": "Normal workload succeeds completely",
+      "passed": true,
+      "seconds": 17.3,
+      "facts": {
+        "requests": 142,
+        "outcomes": {
+          "ok": 142,
+          "rejected": 0,
+          "failed": 0
+        },
+        "p95_ms": 103.9
+      },
+      "error": null
+    },
+    {
+      "code": "S03",
+      "title": "Peak workload (within capacity) is slower but does not fail",
+      "passed": true,
+      "seconds": 17.2,
+      "facts": {
+        "requests": 476,
+        "outcomes": {
+          "ok": 476,
+          "rejected": 0,
+          "failed": 0
+        },
+        "p95_ms": 184.0
+      },
+      "error": null
+    },
+    {
+      "code": "S04",
+      "title": "Overload beyond capacity is shed, money stays correct, service recovers",
+      "passed": true,
+      "seconds": 30.3,
+      "facts": {
+        "requests": 1153,
+        "outcomes": {
+          "ok": 720,
+          "rejected": 0,
+          "failed": 433
+        },
+        "p95_ms": 5171.5,
+        "overloaded": 235,
+        "after": {
+          "transactions_completed": 298,
+          "transactions_failed": 102,
+          "transactions_processing": 0,
+          "open_holds": 0,
+          "payments_authorized_not_settled": 0
+        }
+      },
+      "error": null
+    },
+    {
+      "code": "S05",
+      "title": "Abnormal workload is refused by business rules, not by crashes",
+      "passed": true,
+      "seconds": 17.2,
+      "facts": {
+        "outcomes": {
+          "ok": 51,
+          "rejected": 115,
+          "failed": 0
+        },
+        "codes": {
+          "201": 33,
+          "403 FRAUD_DENY": 30,
+          "401 UNAUTHENTICATED": 25,
+          "404 NOT_FOUND": 25,
+          "401 BAD_CREDENTIALS": 24,
+          "200": 18,
+          "402 PAYMENT_DECLINED": 6,
+          "422 INVALID_REQUEST": 4,
+          "409 INSUFFICIENT_FUNDS": 1
+        }
+      },
+      "error": null
+    },
+    {
+      "code": "S06",
+      "title": "Crash of Account Management: transactions stop, customers and login work",
+      "passed": true,
+      "seconds": 8.5,
+      "facts": {
+        "failure_path": [
+          "transaction",
+          "account"
+        ]
+      },
+      "error": null
+    },
+    {
+      "code": "S07",
+      "title": "Soft downtime of Fraud Detection: small transfers degrade, large ones stop",
+      "passed": true,
+      "seconds": 0.7,
+      "facts": {
+        "small": "completed unscreened",
+        "large": "refused 503"
+      },
+      "error": null
+    },
+    {
+      "code": "S08",
+      "title": "Payment Gateway stopped: payments fail with funds released, transfers work",
+      "passed": true,
+      "seconds": 12.3,
+      "facts": {
+        "failure_path": [
+          "transaction",
+          "payment"
+        ]
+      },
+      "error": null
+    },
+    {
+      "code": "S09",
+      "title": "Notification Service down: payments still complete",
+      "passed": true,
+      "seconds": 38.6,
+      "facts": {
+        "receipt": "unavailable",
+        "payment": "completed"
+      },
+      "error": null
+    },
+    {
+      "code": "S10",
+      "title": "Authentication down: every customer request is blocked",
+      "passed": true,
+      "seconds": 8.8,
+      "facts": {
+        "failure_paths": {
+          "customer": [
+            "customer",
+            "authentication"
+          ],
+          "account": [
+            "account",
+            "authentication"
+          ],
+          "transaction": [
+            "transaction",
+            "authentication"
+          ]
+        }
+      },
+      "error": null
+    },
+    {
+      "code": "S11",
+      "title": "Moderate database latency slows everything but nothing fails",
+      "passed": true,
+      "seconds": 19.8,
+      "facts": {
+        "baseline_p50_ms": 15.6,
+        "slow_p50_ms": 177.0,
+        "failed": 0
+      },
+      "error": null
+    },
+    {
+      "code": "S12",
+      "title": "Severe database latency becomes timeouts, then open circuits that fail fast",
+      "passed": true,
+      "seconds": 16.1,
+      "facts": {
+        "first_ms": 1029,
+        "last_ms": 5,
+        "circuit": "open"
+      },
+      "error": null
+    },
+    {
+      "code": "S13",
+      "title": "CPU exhaustion in Transaction Processing: moderate slows it, severe stops it",
+      "passed": true,
+      "seconds": 27.9,
+      "facts": {
+        "baseline": {
+          "median_ms": 62,
+          "ok": 30,
+          "refused_503": 0,
+          "cpu_pct": 49.0
+        },
+        "moderate": {
+          "median_ms": 81,
+          "ok": 30,
+          "refused_503": 0,
+          "cpu_pct": 94.0
+        },
+        "severe": {
+          "median_ms": 3360,
+          "ok": 0,
+          "refused_503": 8,
+          "cpu_pct": 100.0
+        }
+      },
+      "error": null
+    },
+    {
+      "code": "S14",
+      "title": "Memory exhaustion in Account Management sheds requests, then recovers",
+      "passed": true,
+      "seconds": 1.8,
+      "facts": {
+        "mem_pct": 98.09,
+        "mem_after": 17.92
+      },
+      "error": null
+    },
+    {
+      "code": "S15",
+      "title": "Worker-slot exhaustion in the Payment Gateway sheds payments",
+      "passed": true,
+      "seconds": 2.7,
+      "facts": {
+        "message": "payment: OVERLOADED"
+      },
+      "error": null
+    },
+    {
+      "code": "S16",
+      "title": "Database refuses connections: root cause visible, token checks still work",
+      "passed": true,
+      "seconds": 12.1,
+      "facts": {
+        "message": "database: DB_CONNECTION_FAILED"
+      },
+      "error": null
+    },
+    {
+      "code": "S17",
+      "title": "Database connection pool exhausted: queries time out waiting",
+      "passed": true,
+      "seconds": 16.2,
+      "facts": {
+        "message": "database: DB_POOL_EXHAUSTED"
+      },
+      "error": null
+    },
+    {
+      "code": "S18",
+      "title": "Every service can be stopped, started and restarted alone",
+      "passed": true,
+      "seconds": 63.8,
+      "facts": {
+        "stop_modes": {
+          "database": "graceful",
+          "authentication": "graceful",
+          "customer": "graceful",
+          "account": "graceful",
+          "notification": "graceful",
+          "payment": "graceful",
+          "fraud": "graceful",
+          "transaction": "graceful"
+        }
+      },
+      "error": null
+    },
+    {
+      "code": "S19",
+      "title": "Services start in reverse order, before their dependencies exist",
+      "passed": true,
+      "seconds": 24.0,
+      "facts": {
+        "order": [
+          "transaction",
+          "fraud",
+          "payment",
+          "notification",
+          "account",
+          "customer",
+          "authentication",
+          "database"
+        ]
+      },
+      "error": null
+    },
+    {
+      "code": "S20",
+      "title": "Balances survive a database crash and restart",
+      "passed": true,
+      "seconds": 2.9,
+      "facts": {
+        "balances_identical": true
+      },
+      "error": null
+    },
+    {
+      "code": "S21",
+      "title": "Transaction Processing killed mid-load: no money lost or created",
+      "passed": true,
+      "seconds": 24.6,
+      "facts": {
+        "acknowledged": 93,
+        "acknowledged_but_missing": 0,
+        "committed_without_acknowledgement": 1,
+        "outcomes": {
+          "ok": 93,
+          "rejected": 0,
+          "failed": 37
+        },
+        "after": {
+          "transactions_completed": 583,
+          "transactions_failed": 252,
+          "transactions_processing": 0,
+          "open_holds": 0,
+          "payments_authorized_not_settled": 0
+        }
+      },
+      "error": null
+    },
+    {
+      "code": "S22",
+      "title": "Database killed mid-load: no money lost or created",
+      "passed": true,
+      "seconds": 26.8,
+      "facts": {
+        "acknowledged": 82,
+        "acknowledged_but_missing": 0,
+        "committed_without_acknowledgement": 0,
+        "outcomes": {
+          "ok": 82,
+          "rejected": 0,
+          "failed": 64
+        },
+        "after": {
+          "transactions_completed": 669,
+          "transactions_failed": 253,
+          "transactions_processing": 0,
+          "open_holds": 0,
+          "payments_authorized_not_settled": 0
+        }
+      },
+      "error": null
+    },
+    {
+      "code": "S23",
+      "title": "Observed service calls match the declared dependency map exactly",
+      "passed": true,
+      "seconds": 10.1,
+      "facts": {
+        "observed": 14,
+        "declared": 14
+      },
+      "error": null
+    }
+  ]
+}

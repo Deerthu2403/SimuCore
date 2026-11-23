@@ -1,0 +1,29 @@
+{
+  "description": "Declared dependencies of the simulated bank. source depends on target. Services refuse to make any call that is not listed here.",
+  "services": {
+    "authentication": {"title": "Authentication Service",         "port": 8101, "max_concurrency": 64, "criticality": 5, "node_id": "bank-authentication"},
+    "customer":       {"title": "Customer Management Service",    "port": 8102, "max_concurrency": 48, "criticality": 3, "node_id": "bank-customer"},
+    "account":        {"title": "Account Management Service",     "port": 8103, "max_concurrency": 64, "criticality": 5, "node_id": "bank-account"},
+    "transaction":    {"title": "Transaction Processing Service", "port": 8104, "max_concurrency": 48, "criticality": 5, "node_id": "bank-transaction"},
+    "payment":        {"title": "Payment Gateway Service",        "port": 8105, "max_concurrency": 48, "criticality": 4, "node_id": "bank-payment"},
+    "fraud":          {"title": "Fraud Detection Service",        "port": 8106, "max_concurrency": 48, "criticality": 4, "node_id": "bank-fraud"},
+    "notification":   {"title": "Notification Service",           "port": 8107, "max_concurrency": 48, "criticality": 2, "node_id": "bank-notification"},
+    "database":       {"title": "Database Service",               "port": 8108, "max_concurrency": 96, "criticality": 5, "node_id": "bank-database"}
+  },
+  "dependencies": [
+    {"source": "authentication", "target": "database",       "mode": "required",   "timeout_ms": 1000, "weight": 0.5, "purpose": "credential lookup at login (token verification needs no database)"},
+    {"source": "customer",       "target": "authentication", "mode": "required",   "timeout_ms": 1500, "weight": 0.9, "purpose": "verify the caller's token"},
+    {"source": "customer",       "target": "database",       "mode": "required",   "timeout_ms": 1000, "weight": 1.0, "purpose": "customer profiles"},
+    {"source": "account",        "target": "authentication", "mode": "required",   "timeout_ms": 1500, "weight": 0.8, "purpose": "verify the caller's token on customer requests"},
+    {"source": "account",        "target": "database",       "mode": "required",   "timeout_ms": 1000, "weight": 1.0, "purpose": "balances, holds and ledger postings"},
+    {"source": "transaction",    "target": "authentication", "mode": "required",   "timeout_ms": 1500, "weight": 0.9, "purpose": "verify the caller's token"},
+    {"source": "transaction",    "target": "account",        "mode": "required",   "timeout_ms": 2000, "weight": 1.0, "purpose": "ownership check, hold, capture and release of funds"},
+    {"source": "transaction",    "target": "fraud",          "mode": "degradable", "timeout_ms": 1500, "weight": 0.5, "purpose": "risk decision; small amounts proceed unscreened if it is down"},
+    {"source": "transaction",    "target": "payment",        "mode": "required",   "timeout_ms": 2500, "weight": 0.6, "purpose": "authorise, capture and void external payments"},
+    {"source": "transaction",    "target": "database",       "mode": "required",   "timeout_ms": 1000, "weight": 0.9, "purpose": "transaction records and idempotency keys"},
+    {"source": "payment",        "target": "database",       "mode": "required",   "timeout_ms": 1000, "weight": 1.0, "purpose": "payment state"},
+    {"source": "payment",        "target": "notification",   "mode": "best_effort","timeout_ms": 1000, "weight": 0.1, "purpose": "payment receipts"},
+    {"source": "fraud",          "target": "database",       "mode": "required",   "timeout_ms": 1000, "weight": 0.9, "purpose": "recent transaction velocity"},
+    {"source": "notification",   "target": "customer",       "mode": "best_effort","timeout_ms": 2000, "weight": 0.3, "purpose": "contact preference, looked up asynchronously"}
+  ]
+}

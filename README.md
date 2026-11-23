@@ -9,7 +9,9 @@ propagate through dependencies, runs what-if simulations, optimises resources
 with NSGA-II, calibrates itself from actual-vs-predicted outcomes and explains
 every recommendation.
 
-> **Status: Phase 1 — Foundation.** The system runs against a *simulated* bank.
+> **Status: foundation plus simulated banking microservices.** The 3D twin still runs on its
+> built-in synthetic telemetry; the eight real services in [`banking-sim/`](banking-sim) are the
+> next telemetry source. No real bank is involved.
 > Production data enters later only through secure, read-only telemetry adapters.
 
 ## Capabilities and status
@@ -49,6 +51,7 @@ SimuCore/
 │   └── requirements*.txt
 ├── frontend/                 React + TypeScript + React Three Fiber
 │   └── src/{scene,components,store,services,types}
+├── banking-sim/              Eight simulated banking microservices, workloads, failure scenarios
 ├── database/schema/          PostgreSQL DDL (auto-applied by the container)
 ├── infra/                    docker-compose, Prometheus, Grafana provisioning
 └── docs/                     architecture & design documents
@@ -63,6 +66,7 @@ SimuCore/
 5. [Database schema](docs/05-database-schema.md)
 6. [3D user interface](docs/06-3d-user-interface.md)
 7. [Development roadmap](docs/07-roadmap.md)
+8. [Simulated banking microservices](docs/08-banking-microservices.md)
 
 ## Getting started (local, Windows PowerShell)
 
