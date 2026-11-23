@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 from datetime import timedelta
 
@@ -87,3 +88,6 @@ class TwinSynchronizer:
             for m in STANDARD_METRICS:
                 if m in st.metrics:
                     NODE_METRIC.labels(st.node_id, m).set(st.metrics[m])
+                else:  # e.g. a down service has no CPU: do not keep exporting the last one
+                    with contextlib.suppress(KeyError):
+                        NODE_METRIC.remove(st.node_id, m)

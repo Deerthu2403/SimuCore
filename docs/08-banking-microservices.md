@@ -151,5 +151,44 @@ removes them.
 * A receipt is lost if the Notification Service is down when the payment settles, and queued
   receipts are lost if it crashes. Payments are unaffected.
 * Restarting Authentication invalidates all tokens (its signing key is per process).
-* The live digital twin does not read these services yet. It shares their dependency map, and
-  `/telemetry` already uses its metric names; the read-only adapter is the next step.
+* A dead dependency costs its callers up to 500 ms per call (the connection timeout) until the
+  circuit opens, even when the dependency is only "best effort".
+
+## 8. Live digital twin
+
+`SIMUCORE_TELEMETRY_ADAPTER=bank_services` makes the twin show these services
+(`backend/app/adapters/bank_services.py`). Once per second it sends one `GET /telemetry` to each
+service. It never holds the internal key, accepts only loopback and the eight container names,
+does not follow redirects, and validates everything it reads.
+
+| What happens | What the twin shows |
+|---|---|
+| service answers | its metrics, judged against that service's measured baseline |
+| connection refused, or the service reports itself unavailable | **down** |
+| hung, slow, or nonsense telemetry | **unknown** after 3 s; it does not guess |
+
+A service with no traffic has no latency or errors, so a broken caller looks healthy until somebody
+uses it. Baselines are the p95 measured on one Windows laptop under the normal workload; re-measure
+them elsewhere (`baseline_latency_ms` in the dependency map).
+
+Measured results: [`backend/results/live_twin.md`](../backend/results/live_twin.md).
+
+### First predicted-versus-observed comparison
+
+Six services were killed three times each under steady load, with a no-fault control (which raised
+nothing). "Affected" means degraded or critical for at least two readings in most trials; the
+prediction counts impact of 0.5 or more.
+
+| Killed | Predicted | Observed | Difference |
+|---|---|---|---|
+| database | account, customer, fraud, payment, transaction | account, authentication, customer, fraud, transaction | missed authentication; payment not observed, because no payment got far enough to reach it |
+| authentication | account, customer, transaction | same | none |
+| account | transaction | same | none |
+| payment | transaction | same | none |
+| fraud | none | transaction (slow) | missed |
+| notification | none | payment, transaction (slow, 0 % errors) | missed both |
+
+Precision 0.90, recall 0.69. The model predicts who *fails* but not who merely becomes *slow* while
+waiting for a dead optional dependency. The edge weights were not tuned to fit this result: closing
+that gap is the job of the calibration phase, and this is its first data. Six origins in one
+environment is a small sample.

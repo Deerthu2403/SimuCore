@@ -2,16 +2,18 @@ import { useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Grid, Html, OrbitControls } from "@react-three/drei";
 import { useTwinStore } from "../store/twinStore";
-import { computeLayout, LAYER_LABELS, LAYER_ORDER, layerY } from "./layout";
+import { computeLayout, LAYER_LABELS, layerY, presentLayers } from "./layout";
 import { InfraNodeMesh } from "./InfraNodeMesh";
 import { DependencyLines } from "./DependencyLines";
 
 function LayerPlanes() {
   const hidden = useTwinStore((s) => s.hiddenLayers);
+  const topology = useTwinStore((s) => s.topology);
+  const present = useMemo(() => presentLayers(topology?.nodes ?? []), [topology]);
   return (
     <>
-      {LAYER_ORDER.filter((l) => !hidden.has(l)).map((l) => (
-        <group key={l} position={[0, layerY(l) - 0.7, 0]}>
+      {present.filter((l) => !hidden.has(l)).map((l) => (
+        <group key={l} position={[0, layerY(l, present) - 0.7, 0]}>
           <mesh rotation={[-Math.PI / 2, 0, 0]}>
             <circleGeometry args={[9.5, 64]} />
             <meshBasicMaterial color="#1e293b" transparent opacity={0.18} />

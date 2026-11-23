@@ -20,12 +20,12 @@ export function connectTwinSocket(): () => void {
     };
     ws.onmessage = (ev) => {
       const msg = JSON.parse(ev.data) as TwinMessage;
-      if (msg.type === "snapshot") store().setSnapshot(msg.topology, msg.states, msg.version);
+      if (msg.type === "snapshot") store().setSnapshot(msg.topology, msg.states, msg.version, msg.source);
       else if (msg.type === "delta") store().applyDelta(msg.states, msg.version);
     };
     ws.onclose = () => {
+      if (closed) return; // replaced by a newer socket: it owns the connection status now
       store().setConnection("offline");
-      if (closed) return;
       const delay = Math.min(1000 * 2 ** retry++, 15000);
       timer = window.setTimeout(open, delay);
     };

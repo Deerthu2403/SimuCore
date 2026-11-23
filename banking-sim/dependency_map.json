@@ -1,14 +1,14 @@
 {
   "description": "Declared dependencies of the simulated bank. source depends on target. Services refuse to make any call that is not listed here.",
   "services": {
-    "authentication": {"title": "Authentication Service",         "port": 8101, "max_concurrency": 64, "criticality": 5, "node_id": "bank-authentication"},
-    "customer":       {"title": "Customer Management Service",    "port": 8102, "max_concurrency": 48, "criticality": 3, "node_id": "bank-customer"},
-    "account":        {"title": "Account Management Service",     "port": 8103, "max_concurrency": 64, "criticality": 5, "node_id": "bank-account"},
-    "transaction":    {"title": "Transaction Processing Service", "port": 8104, "max_concurrency": 48, "criticality": 5, "node_id": "bank-transaction"},
-    "payment":        {"title": "Payment Gateway Service",        "port": 8105, "max_concurrency": 48, "criticality": 4, "node_id": "bank-payment"},
-    "fraud":          {"title": "Fraud Detection Service",        "port": 8106, "max_concurrency": 48, "criticality": 4, "node_id": "bank-fraud"},
-    "notification":   {"title": "Notification Service",           "port": 8107, "max_concurrency": 48, "criticality": 2, "node_id": "bank-notification"},
-    "database":       {"title": "Database Service",               "port": 8108, "max_concurrency": 96, "criticality": 5, "node_id": "bank-database"}
+    "authentication": {"title": "Authentication Service",         "port": 8101, "max_concurrency": 64, "criticality": 5, "node_id": "bank-authentication", "baseline_latency_ms": 75},
+    "customer":       {"title": "Customer Management Service",    "port": 8102, "max_concurrency": 48, "criticality": 3, "node_id": "bank-customer", "baseline_latency_ms": 25},
+    "account":        {"title": "Account Management Service",     "port": 8103, "max_concurrency": 64, "criticality": 5, "node_id": "bank-account", "baseline_latency_ms": 25},
+    "transaction":    {"title": "Transaction Processing Service", "port": 8104, "max_concurrency": 48, "criticality": 5, "node_id": "bank-transaction", "baseline_latency_ms": 160},
+    "payment":        {"title": "Payment Gateway Service",        "port": 8105, "max_concurrency": 48, "criticality": 4, "node_id": "bank-payment", "baseline_latency_ms": 30},
+    "fraud":          {"title": "Fraud Detection Service",        "port": 8106, "max_concurrency": 48, "criticality": 4, "node_id": "bank-fraud", "baseline_latency_ms": 25},
+    "notification":   {"title": "Notification Service",           "port": 8107, "max_concurrency": 48, "criticality": 2, "node_id": "bank-notification", "baseline_latency_ms": 25},
+    "database":       {"title": "Database Service",               "port": 8108, "max_concurrency": 96, "criticality": 5, "node_id": "bank-database", "baseline_latency_ms": 25}
   },
   "dependencies": [
     {"source": "authentication", "target": "database",       "mode": "required",   "timeout_ms": 1000, "weight": 0.5, "purpose": "credential lookup at login (token verification needs no database)"},

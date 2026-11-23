@@ -24,7 +24,8 @@ def test_bank_map_is_a_valid_twin_topology():
     assert len(topo.nodes) == 8 and not TopologyGraph(topo).has_cycles()
 
 
-def test_predicted_blast_radius_matches_what_the_live_scenarios_observe():
+def test_predicted_failures_match_the_live_scenarios():
+    """Who fails, not who slows down: see doc 08 section 8 for what the model misses."""
     assert set(impacts("account")) == {"transaction"}  # S06
     assert impacts("fraud")["transaction"] < 0.5  # S07: degradable, not fatal
     assert max(impacts("notification").values()) < 0.1  # S09: best effort

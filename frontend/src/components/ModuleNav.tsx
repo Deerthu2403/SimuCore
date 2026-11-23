@@ -1,4 +1,5 @@
-import { LAYER_LABELS, LAYER_ORDER } from "../scene/layout";
+import { useMemo } from "react";
+import { LAYER_LABELS, presentLayers } from "../scene/layout";
 import { useTwinStore } from "../store/twinStore";
 
 const MODULES: { name: string; phase: number }[] = [
@@ -14,6 +15,8 @@ const MODULES: { name: string; phase: number }[] = [
 export function ModuleNav() {
   const hidden = useTwinStore((s) => s.hiddenLayers);
   const toggle = useTwinStore((s) => s.toggleLayer);
+  const topology = useTwinStore((s) => s.topology);
+  const layers = useMemo(() => presentLayers(topology?.nodes ?? []), [topology]);
   return (
     <nav className="panel module-nav">
       <h3>Modules</h3>
@@ -26,7 +29,7 @@ export function ModuleNav() {
         ))}
       </ul>
       <h3>Layers</h3>
-      {LAYER_ORDER.map((l) => (
+      {layers.map((l) => (
         <label key={l} className="layer-toggle">
           <input type="checkbox" checked={!hidden.has(l)} onChange={() => toggle(l)} />
           {LAYER_LABELS[l]}

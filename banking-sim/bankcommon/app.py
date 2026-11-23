@@ -246,6 +246,10 @@ def build_service(name: str, settings: Settings, *, lifespan: Lifespan | None = 
         ctx.faults.clear()
         return {"cleared": True}
 
+    @app.get("/control/whoami", tags=["control"], dependencies=internal)
+    async def whoami() -> dict:
+        return {"service": name, "pid": os.getpid(), "instance_id": ctx.instance_id}
+
     @app.post("/control/shutdown", tags=["control"], dependencies=internal)
     async def shutdown() -> dict:
         if ctx.shutdown is None:

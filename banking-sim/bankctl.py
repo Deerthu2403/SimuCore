@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import functools
 import json
 import os
 import secrets
@@ -38,10 +39,64 @@ class BankCtlError(RuntimeError):
     pass
 
 
+class LifecycleLock:
+    """One start/stop command at a time. The OS drops the lock if its owner dies."""
+
+    def __init__(self, path: Path, wait_s: float = 120.0) -> None:
+        self.path, self.wait_s, self.depth = path, wait_s, 0
+
+    def __enter__(self) -> None:
+        self.depth += 1
+        if self.depth > 1:
+            return
+        self.file = self.path.open("a+b")
+        deadline, announced = time.monotonic() + self.wait_s, False
+        while not self._try():
+            if not announced:
+                print("another bankctl command is running; waiting...", file=sys.stderr)
+                announced = True
+            if time.monotonic() > deadline:
+                self.file.close()
+                self.depth = 0
+                raise BankCtlError("another bankctl command is still running")
+            time.sleep(0.2)
+
+    def _try(self) -> bool:
+        try:
+            if sys.platform == "win32":
+                import msvcrt
+                self.file.seek(0)
+                msvcrt.locking(self.file.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(self.file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return True
+        except OSError:
+            return False
+
+    def __exit__(self, *exc) -> None:
+        self.depth -= 1
+        if self.depth == 0:
+            if sys.platform == "win32":
+                import msvcrt
+                self.file.seek(0)
+                msvcrt.locking(self.file.fileno(), msvcrt.LK_UNLCK, 1)
+            self.file.close()  # releases the POSIX lock
+
+
+def locked(fn):
+    @functools.wraps(fn)
+    def wrapper(self, *args, **kw):
+        with self.lock:
+            return fn(self, *args, **kw)
+    return wrapper
+
+
 class Bank:
     def __init__(self, runtime: Path = RUNTIME, env: dict[str, str] | None = None) -> None:
         self.runtime, self.extra_env = runtime, env or {}
         runtime.mkdir(parents=True, exist_ok=True)
+        self.lock = LifecycleLock(runtime / "bankctl.lock")
         self.http = httpx.Client(timeout=3.0, trust_env=False)
 
     # ------------------------------------------------------------------ basics
@@ -66,18 +121,43 @@ class Bank:
         return self.runtime / f"{name}.json"
 
     def process(self, name: str) -> psutil.Process | None:
-        """The recorded process, only if it is provably the one we started (PIDs get reused)."""
+        """The service's process: the recorded one, else an unrecorded one that is ours."""
         f = self._record(name)
-        if not f.exists():
+        if f.exists():
+            rec = json.loads(f.read_text(encoding="utf-8"))
+            try:
+                p = psutil.Process(rec["pid"])
+                # PIDs get reused, so the start time must match too.
+                if abs(p.create_time() - rec["create_time"]) < 1 and p.is_running():
+                    return p
+            except psutil.NoSuchProcess:
+                pass
+        return self._adopt(name)
+
+    def _adopt(self, name: str) -> psutil.Process | None:
+        """Find a service we lost track of. Only one that is provably ours qualifies: it answers
+        our port, runs this service's exact command from this folder, and accepts our key."""
+        info = self.live(name)
+        if not info or "pid" not in info or info.get("service") != name:
             return None
-        rec = json.loads(f.read_text(encoding="utf-8"))
         try:
-            p = psutil.Process(rec["pid"])
-            if abs(p.create_time() - rec["create_time"]) < 1 and p.is_running():
-                return p
-        except psutil.NoSuchProcess:
-            pass
-        return None
+            p = psutil.Process(info["pid"])
+            if p.cmdline()[1:] != ["-m", "bankcommon.run", name] or Path(p.cwd()) != ROOT:
+                return None
+            r = self.http.get(f"{self.url(name)}/control/whoami", headers=self.headers)
+            if r.status_code != 200 or r.json()["pid"] != p.pid:
+                return None
+            parent = p.parent()  # on Windows the venv launcher owns the real interpreter
+            if parent and parent.cmdline()[1:] == p.cmdline()[1:]:
+                p = parent
+        except (psutil.Error, httpx.HTTPError, KeyError, ValueError):
+            return None
+        self._write_record(name, p)
+        return p
+
+    def _write_record(self, name: str, p: psutil.Process) -> None:
+        self._record(name).write_text(
+            json.dumps({"pid": p.pid, "create_time": p.create_time()}), encoding="utf-8")
 
     def live(self, name: str) -> dict | None:
         try:
@@ -87,6 +167,7 @@ class Bank:
             return None
 
     # --------------------------------------------------------------- lifecycle
+    @locked
     def start(self, name: str, wait_s: float = 25.0) -> dict:
         if self.process(name):
             raise BankCtlError(f"{name} is already running")
@@ -102,19 +183,27 @@ class Bank:
             proc = subprocess.Popen([sys.executable, "-m", "bankcommon.run", name], cwd=ROOT,
                                     env=env, stdout=out, stderr=out, stdin=subprocess.DEVNULL,
                                     creationflags=flags, start_new_session=sys.platform != "win32")
-        self._record(name).write_text(json.dumps(
-            {"pid": proc.pid, "create_time": psutil.Process(proc.pid).create_time()}),
-            encoding="utf-8")
+        self._write_record(name, psutil.Process(proc.pid))
         deadline = time.monotonic() + wait_s
         while time.monotonic() < deadline:
             info = self.live(name)
-            if info and info["status"] == "alive":
+            if info and info["status"] == "alive" and self._is_family(proc.pid, info["pid"]):
                 return info
             if proc.poll() is not None:
+                self._record(name).unlink(missing_ok=True)
                 raise BankCtlError(f"{name} exited at start-up; see {self.runtime / name}.log")
             time.sleep(0.1)
         raise BankCtlError(f"{name} did not become live within {wait_s}s")
 
+    @staticmethod
+    def _is_family(pid: int, answering: int) -> bool:
+        """Is the process that answered the one we launched (or its child)?"""
+        try:
+            return answering in {pid, *(c.pid for c in psutil.Process(pid).children())}
+        except psutil.NoSuchProcess:
+            return False
+
+    @locked
     def stop(self, name: str) -> str:
         p = self.process(name)
         if p is None:
@@ -132,6 +221,7 @@ class Bank:
         self._record(name).unlink(missing_ok=True)
         return how
 
+    @locked
     def kill(self, name: str) -> str:
         p = self.process(name)
         if p is None:
@@ -149,18 +239,24 @@ class Bank:
                 pass
         psutil.wait_procs(procs, timeout=5)
 
+    @locked
     def restart(self, name: str) -> dict:
         self.stop(name)
         return self.start(name)
 
+    @locked
     def up(self) -> None:
         for name in START_ORDER:
             if not self.process(name):
                 self.start(name)
 
+    @locked
     def down(self) -> None:
         for name in reversed(START_ORDER):
             self.stop(name)
+        left = [n for n in START_ORDER if self.live(n) is not None]
+        if left:
+            raise BankCtlError(f"still answering, but not started by this bank: {', '.join(left)}")
 
     def status(self) -> list[dict]:
         rows = []

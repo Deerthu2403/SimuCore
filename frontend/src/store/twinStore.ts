@@ -7,6 +7,7 @@ export type Connection = "connecting" | "live" | "offline";
 interface TwinStore {
   connection: Connection;
   version: number;
+  source: string | null;
   topology: Topology | null;
   states: Record<string, NodeState>;
   selectedId: string | null;
@@ -14,7 +15,7 @@ interface TwinStore {
   hiddenLayers: Set<NodeLayer>;
 
   setConnection: (c: Connection) => void;
-  setSnapshot: (t: Topology, s: NodeState[], version: number) => void;
+  setSnapshot: (t: Topology, s: NodeState[], version: number, source: string) => void;
   applyDelta: (s: NodeState[], version: number) => void;
   select: (id: string | null) => void;
   setImpact: (r: PropagationResponse | null) => void;
@@ -26,6 +27,7 @@ const index = (s: NodeState[]) => Object.fromEntries(s.map((x) => [x.node_id, x]
 export const useTwinStore = create<TwinStore>((set) => ({
   connection: "connecting",
   version: 0,
+  source: null,
   topology: null,
   states: {},
   selectedId: null,
@@ -33,7 +35,17 @@ export const useTwinStore = create<TwinStore>((set) => ({
   hiddenLayers: new Set(),
 
   setConnection: (connection) => set({ connection }),
-  setSnapshot: (topology, states, version) => set({ topology, states: index(states), version }),
+  setSnapshot: (topology, states, version, source) =>
+    set((st) => {
+      // The backend may come back with a different source: drop references to vanished nodes.
+      const ids = new Set(topology.nodes.map((n) => n.id));
+      const keepImpact = st.impact?.result.impacted.every((n) => ids.has(n.node_id));
+      return {
+        topology, states: index(states), version, source,
+        selectedId: st.selectedId && ids.has(st.selectedId) ? st.selectedId : null,
+        impact: keepImpact ? st.impact : null,
+      };
+    }),
   applyDelta: (delta, version) =>
     set((st) => ({ states: { ...st.states, ...index(delta) }, version })),
   select: (selectedId) => set({ selectedId }),

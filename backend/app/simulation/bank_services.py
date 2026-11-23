@@ -25,7 +25,11 @@ def load_bank_services_topology(path: Path = DEFAULT_MAP) -> Topology:
             layer=NodeLayer.DATA if name == "database" else NodeLayer.APPLICATION,
             criticality=s["criticality"],
             capacity={"max_concurrency": s["max_concurrency"]},
-            attributes={"service": name, "port": s["port"]},
+            attributes={
+                "service": name,
+                "port": s["port"],
+                "base_latency_ms": s["baseline_latency_ms"],  # measured p95 under normal load
+            },
         )
         for name, s in services.items()
     ]

@@ -82,7 +82,8 @@ export function InfraNodeMesh({ node, position }: { node: InfraNode; position: V
         <Html distanceFactor={14} position={[0, 1.0, 0]} center className="node-tooltip">
           <strong>{node.name}</strong>
           <span className={`status status-${status}`}>{status}</span>
-          {state && (
+          {state && state.metrics.cpu_pct === undefined && <small>no metrics reported</small>}
+          {state && state.metrics.cpu_pct !== undefined && (
             <small>
               cpu {state.metrics.cpu_pct?.toFixed(0)}% · {state.metrics.latency_ms?.toFixed(1)} ms ·
               err {((state.metrics.error_rate ?? 0) * 100).toFixed(2)}%

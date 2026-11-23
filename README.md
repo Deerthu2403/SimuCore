@@ -9,9 +9,9 @@ propagate through dependencies, runs what-if simulations, optimises resources
 with NSGA-II, calibrates itself from actual-vs-predicted outcomes and explains
 every recommendation.
 
-> **Status: foundation plus simulated banking microservices.** The 3D twin still runs on its
-> built-in synthetic telemetry; the eight real services in [`banking-sim/`](banking-sim) are the
-> next telemetry source. No real bank is involved.
+> **Status: foundation, simulated banking microservices, live twin.** The 3D twin shows either its
+> built-in synthetic data or the eight services running in [`banking-sim/`](banking-sim). No real
+> bank is involved.
 > Production data enters later only through secure, read-only telemetry adapters.
 
 ## Capabilities and status
@@ -93,6 +93,19 @@ Open http://localhost:5173 — the twin connects over WebSocket and starts
 updating every second. Click a component, then **Simulate failure → blast radius**.
 
 API docs: http://localhost:8000/docs · Prometheus metrics: http://localhost:8000/metrics/
+
+### Show the running banking services
+
+```powershell
+cd banking-sim; .\.venv\Scripts\python bankctl.py up
+```
+
+```powershell
+cd backend; .\.venv\Scripts\python -m uvicorn app.main:app --env-file bank-services.env --port 8000
+```
+
+Then `npm run dev` in `frontend` as above. Leave out `--env-file` to use the built-in
+simulation. Docker Compose for the backend still uses the built-in simulation.
 
 ### Full stack with Docker
 

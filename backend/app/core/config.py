@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     # 0.0003 x 27 nodes at 1 s ticks ~= one incident every ~2 minutes.
     incident_rate: float = 0.0003
 
+    # Simulated banking microservices (adapter "bank_services"; read-only)
+    bank_url_template: str = "http://127.0.0.1:{port}"
+
     # Prometheus adapter (future production integration; read-only)
     prometheus_url: str = "http://localhost:9090"
 
