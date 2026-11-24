@@ -59,5 +59,12 @@ Design notes:
 * Flexible per-kind attributes and metrics use `JSONB` with GIN indexes; the hot
   standard metrics are columns on `metric_sample` for fast aggregation.
 * Enumerations are PostgreSQL `ENUM` types mirroring `app/domain/models.py`.
+* `002_grafana_readonly.sh` creates `grafana_reader`, which can only `SELECT`. Grafana uses it, never
+  the owner's account.
+* **Partitions must exist before their data.** A monthly partition cannot be created once rows for
+  that month sit in `metric_sample_default` (measured: PostgreSQL refuses with 23514). The persistence
+  phase must create partitions ahead of time and treat rows in the default partition as an alarm.
+* The rule "every recommendation has an explanation" is enforced by the Python contract, not yet by
+  the database: a recommendation row can exist without an explanation row.
 * Retention: raw `metric_sample` partitions dropped after 30 days (configurable);
   downsampled aggregates kept (Phase 2 materialised view `metric_sample_5m`).

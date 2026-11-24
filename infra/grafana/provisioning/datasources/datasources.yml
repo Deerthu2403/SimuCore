@@ -1,16 +1,18 @@
 apiVersion: 1
 datasources:
   - name: Prometheus
+    uid: simucore-prometheus
     type: prometheus
     access: proxy
     url: http://prometheus:9090
     isDefault: true
   - name: SimuCore-Postgres
+    uid: simucore-postgres
     type: postgres
     url: postgres:5432
-    user: simucore
+    user: grafana_reader
     secureJsonData:
-      password: simucore
+      password: ${GRAFANA_DB_PASSWORD}
     jsonData:
       database: simucore
       sslmode: disable

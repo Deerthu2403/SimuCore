@@ -1,54 +1,92 @@
+# SimuCore platform: backend, 3D UI, PostgreSQL, Prometheus, Grafana.
+# From the repository root:
+#   docker compose --env-file .env -f infra/docker-compose.yml up -d --build
+# Every password must come from .env: there are no defaults, so forgetting --env-file fails
+# loudly instead of starting with a guessable password. Ports are reachable from this PC only.
 name: simucore
+
+x-common: &common
+  restart: on-failure:5   # recover from crashes, but never start by itself with Docker
+  security_opt: ["no-new-privileges:true"]
 
 services:
   postgres:
+    <<: *common
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: simucore
-      POSTGRES_USER: ${POSTGRES_USER:-simucore}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-simucore}
-    ports: ["5432:5432"]
+      POSTGRES_USER: ${POSTGRES_USER:?set it in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set it in .env}
+      GRAFANA_DB_PASSWORD: ${GRAFANA_DB_PASSWORD:?set it in .env}
+    ports: ["127.0.0.1:5432:5432"]
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ../database/schema:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-simucore} -d simucore"]
-      interval: 10s
-      retries: 5
+      # -h: the temporary server used during initialisation listens on the socket only, so
+      # this stays unhealthy until the schema is really loaded.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$$POSTGRES_USER\" -d simucore"]
+      interval: 5s
+      retries: 12
 
   backend:
+    <<: *common
     build: ../backend
-    env_file: ../.env
     environment:
-      SIMUCORE_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-simucore}:${POSTGRES_PASSWORD:-simucore}@postgres:5432/simucore
-    ports: ["8000:8000"]
+      SIMUCORE_LOG_LEVEL: ${SIMUCORE_LOG_LEVEL:-INFO}
+      SIMUCORE_TELEMETRY_ADAPTER: simulated
+      SIMUCORE_TELEMETRY_INTERVAL_S: ${SIMUCORE_TELEMETRY_INTERVAL_S:-1.0}
+      SIMUCORE_RANDOM_SEED: ${SIMUCORE_RANDOM_SEED:-42}
+      SIMUCORE_INCIDENT_RATE: ${SIMUCORE_INCIDENT_RATE:-0.0003}
+      SIMUCORE_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/simucore
+    ports: ["127.0.0.1:8000:8000"]
     depends_on:
       postgres:
         condition: service_healthy
 
   frontend:
+    <<: *common
     build: ../frontend
-    ports: ["8080:8080"]
+    ports: ["127.0.0.1:8080:8080"]
     depends_on: [backend]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
+      interval: 10s
 
   prometheus:
+    <<: *common
     image: prom/prometheus:v2.54.1
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    ports: ["9090:9090"]
+      - promdata:/prometheus
+    ports: ["127.0.0.1:9090:9090"]
     depends_on: [backend]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:9090/-/ready"]
+      interval: 10s
 
   grafana:
+    <<: *common
     image: grafana/grafana:11.2.2
     environment:
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:?set it in .env}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set it in .env}
       GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GRAFANA_DB_PASSWORD: ${GRAFANA_DB_PASSWORD:?set it in .env}
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
-    ports: ["3000:3000"]
+      - grafanadata:/var/lib/grafana
+    ports: ["127.0.0.1:3000:3000"]
     depends_on: [prometheus]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/api/health"]
+      interval: 10s
 
 volumes:
   pgdata:
+  promdata:
+  grafanadata:

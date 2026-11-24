@@ -110,9 +110,19 @@ simulation. Docker Compose for the backend still uses the built-in simulation.
 ### Full stack with Docker
 
 ```powershell
-copy .env.example .env
-docker compose -f infra/docker-compose.yml up --build
+Copy-Item .env.example .env
 ```
+
+Fill in the three empty passwords in `.env` (the file says how), then:
+
+```powershell
+docker compose --env-file .env -f infra/docker-compose.yml up -d --build
+```
+
+Without `--env-file` it refuses to start rather than using default passwords. All ports are reachable
+from this PC only. PostgreSQL and Grafana take their passwords on first start; to change them later,
+remove the volumes (this deletes the data): `docker compose --env-file .env -f
+infra/docker-compose.yml down --volumes`.
 
 | Service | URL |
 |---|---|
@@ -128,5 +138,11 @@ docker compose -f infra/docker-compose.yml up --build
 cd backend; .\.venv\Scripts\python -m pytest -q
 cd frontend; npm run typecheck; npm run build
 ```
+
+```powershell
+backend\.venv\Scripts\python infra/tests/stack_check.py   # the whole Docker stack, about 3 minutes
+```
+
+Latest stack results: [infra/results/stack.md](infra/results/stack.md).
 
 Optional ML stack for Phase 3+: `pip install -r requirements-ml.txt`.
