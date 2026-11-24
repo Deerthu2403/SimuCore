@@ -25,6 +25,7 @@ class Severity(str, Enum):
 class TwinDelta(BaseModel):
     version: int
     states: list[NodeState]
+    origin: str | None = None  # "measured" or "synthetic"
 
 
 # ----------------------------------------------------------- explainability

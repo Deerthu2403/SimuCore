@@ -23,6 +23,8 @@ class ReadOnlyViolation(RuntimeError):
 class TelemetryAdapter(ABC):
     name: ClassVar[str]
     read_only: ClassVar[bool] = True
+    #: Where the data originally comes from: "measured", "synthetic", or None if not known (yet).
+    origin: str | None = None
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)

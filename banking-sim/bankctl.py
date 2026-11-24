@@ -396,7 +396,7 @@ def main() -> None:
     f = sub.add_parser("fault")
     f.add_argument("service", choices=names)
     f.add_argument("type", choices=["downtime", "latency", "resource_exhaustion",
-                                    "db_connection_failure"])
+                                    "db_connection_failure", "telemetry_fault"])
     f.add_argument("--mode")
     f.add_argument("--latency-ms", type=float, default=0)
     f.add_argument("--magnitude", type=float, default=1.0)

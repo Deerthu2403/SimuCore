@@ -3,10 +3,12 @@ import { useStatusSummary, useTwinStore } from "../store/twinStore";
 const SOURCE_LABELS: Record<string, string> = {
   simulated: "built-in simulation",
   bank_services: "banking services",
+  monitoring: "monitoring service",
 };
 
 export function TopBar() {
   const source = useTwinStore((s) => s.source);
+  const origin = useTwinStore((s) => s.origin);
   const connection = useTwinStore((s) => s.connection);
   const version = useTwinStore((s) => s.version);
   const nodeCount = useTwinStore((s) => s.topology?.nodes.length ?? 0);
@@ -31,6 +33,7 @@ export function TopBar() {
           {connection === "live" ? "LIVE" : "NOT LIVE"}
           {source && ` · ${SOURCE_LABELS[source] ?? source}`}
         </span>
+        {origin === "synthetic" && <span className="synthetic-badge">SYNTHETIC DATA</span>}
       </div>
     </header>
   );

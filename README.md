@@ -52,6 +52,7 @@ SimuCore/
 ├── frontend/                 React + TypeScript + React Three Fiber
 │   └── src/{scene,components,store,services,types}
 ├── banking-sim/              Eight simulated banking microservices, workloads, failure scenarios
+├── monitoring/               Monitoring service: collection, checks, history, streaming
 ├── database/schema/          PostgreSQL DDL (auto-applied by the container)
 ├── infra/                    docker-compose, Prometheus, Grafana provisioning
 └── docs/                     architecture & design documents
@@ -67,6 +68,7 @@ SimuCore/
 6. [3D user interface](docs/06-3d-user-interface.md)
 7. [Development roadmap](docs/07-roadmap.md)
 8. [Simulated banking microservices](docs/08-banking-microservices.md)
+9. [Monitoring and data collection](docs/09-monitoring.md)
 
 ## Getting started (local, Windows PowerShell)
 
@@ -113,7 +115,7 @@ simulation. Docker Compose for the backend still uses the built-in simulation.
 Copy-Item .env.example .env
 ```
 
-Fill in the three empty passwords in `.env` (the file says how), then:
+Fill in the five empty passwords in `.env` (the file says how), then:
 
 ```powershell
 docker compose --env-file .env -f infra/docker-compose.yml up -d --build
@@ -128,6 +130,7 @@ infra/docker-compose.yml down --volumes`.
 |---|---|
 | Frontend | http://localhost:8080 |
 | Backend API | http://localhost:8000/docs |
+| Monitoring API | http://localhost:8200/docs |
 | Prometheus | http://localhost:9090 |
 | Grafana | http://localhost:3000 (dashboard *SimuCore - Twin Overview*) |
 | PostgreSQL | localhost:5432 (schema from `database/schema/001_init.sql`) |

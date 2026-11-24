@@ -34,15 +34,74 @@ services:
     build: ../backend
     environment:
       SIMUCORE_LOG_LEVEL: ${SIMUCORE_LOG_LEVEL:-INFO}
-      SIMUCORE_TELEMETRY_ADAPTER: simulated
+      SIMUCORE_TELEMETRY_ADAPTER: ${SIMUCORE_TELEMETRY_ADAPTER:-simulated}
+      SIMUCORE_MONITORING_URL: http://monitoring:8200
+      SIMUCORE_BANK_URL_TEMPLATE: http://host.docker.internal:{port}
+      SIMUCORE_BANK_MAP_PATH: /config/dependency_map.json
       SIMUCORE_TELEMETRY_INTERVAL_S: ${SIMUCORE_TELEMETRY_INTERVAL_S:-1.0}
       SIMUCORE_RANDOM_SEED: ${SIMUCORE_RANDOM_SEED:-42}
       SIMUCORE_INCIDENT_RATE: ${SIMUCORE_INCIDENT_RATE:-0.0003}
       SIMUCORE_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/simucore
+    volumes:
+      - ../banking-sim/dependency_map.json:/config/dependency_map.json:ro
+    extra_hosts: ["host.docker.internal:host-gateway"]
     ports: ["127.0.0.1:8000:8000"]
     depends_on:
       postgres:
         condition: service_healthy
+
+  # One-shot: applies database/migrations and creates the service roles, then exits.
+  migrate:
+    image: postgres:16-alpine
+    security_opt: ["no-new-privileges:true"]
+    entrypoint: ["sh", "/migrate.sh"]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      MONITOR_DB_PASSWORD: ${MONITOR_DB_PASSWORD:?set it in .env}
+      EXPORTER_DB_PASSWORD: ${EXPORTER_DB_PASSWORD:?set it in .env}
+    volumes:
+      - ../database/migrate.sh:/migrate.sh:ro
+      - ../database/migrations:/migrations:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  monitoring:
+    <<: *common
+    build: ../monitoring
+    environment:
+      MONITOR_SOURCE: ${MONITOR_SOURCE:-prometheus}
+      MONITOR_PROMETHEUS_URL: http://prometheus:9090
+      MONITOR_BANK_URL_TEMPLATE: http://host.docker.internal:{port}
+      MONITOR_SERVICES_FILE: /config/dependency_map.json
+      MONITOR_DATABASE_URL: postgresql://monitor_writer:${MONITOR_DB_PASSWORD}@postgres:5432/simucore
+    volumes:
+      - ../banking-sim/dependency_map.json:/config/dependency_map.json:ro
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    ports: ["127.0.0.1:8200:8200"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  node-exporter:
+    <<: *common
+    # Reports the Linux machine Docker runs in (on Windows: Docker Desktop's virtual machine).
+    image: prom/node-exporter:v1.8.2
+    command: ["--path.procfs=/proc", "--collector.disable-defaults", "--collector.cpu",
+              "--collector.meminfo", "--collector.loadavg", "--collector.diskstats",
+              "--collector.uname"]
+
+  postgres-exporter:
+    <<: *common
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    environment:
+      DATA_SOURCE_URI: postgres:5432/simucore?sslmode=disable
+      DATA_SOURCE_USER: metrics_exporter
+      DATA_SOURCE_PASS: ${EXPORTER_DB_PASSWORD}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
   frontend:
     <<: *common
@@ -59,8 +118,8 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - promdata:/prometheus
+    extra_hosts: ["host.docker.internal:host-gateway"]
     ports: ["127.0.0.1:9090:9090"]
-    depends_on: [backend]
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:9090/-/ready"]
       interval: 10s

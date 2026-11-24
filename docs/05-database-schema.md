@@ -2,8 +2,8 @@
 
 The executable DDL is in [`database/schema/001_init.sql`](../database/schema/001_init.sql)
 and is applied automatically by the Postgres container on first start.
-From Phase 2 onward schema changes are managed with Alembic migrations in
-`backend/migrations/`.
+Later schema changes are plain SQL migrations in
+`database/migrations/`.
 
 ## ER overview
 
@@ -61,9 +61,12 @@ Design notes:
 * Enumerations are PostgreSQL `ENUM` types mirroring `app/domain/models.py`.
 * `002_grafana_readonly.sh` creates `grafana_reader`, which can only `SELECT`. Grafana uses it, never
   the owner's account.
-* **Partitions must exist before their data.** A monthly partition cannot be created once rows for
-  that month sit in `metric_sample_default` (measured: PostgreSQL refuses with 23514). The persistence
-  phase must create partitions ahead of time and treat rows in the default partition as an alarm.
+* **Partitions.** PostgreSQL refuses to create a monthly partition once rows for that month sit in the
+  default partition. `ensure_metric_partitions()` creates them ahead of time and, if it is late, moves
+  such rows; the monitoring service calls it hourly.
+* Changes after `001` and `002` are in `database/migrations/`, applied once each by the `migrate`
+  container. `003_monitoring.sql` adds the full metric set, `origin`, infrastructure samples and
+  monitoring events.
 * The rule "every recommendation has an explanation" is enforced by the Python contract, not yet by
   the database: a recommendation row can exist without an explanation row.
 * Retention: raw `metric_sample` partitions dropped after 30 days (configurable);

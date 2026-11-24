@@ -6,6 +6,7 @@ import asyncio
 import contextlib
 import logging
 import sqlite3
+import time
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from typing import Any, Literal
@@ -47,6 +48,14 @@ class ConnectionPool:
             c.close()
 
     async def run(self, fn: Callable[..., Any], *args: Any) -> Any:
+        """Run a query. The measured response time includes waiting for a connection."""
+        started = time.perf_counter()
+        try:
+            return await self._run(fn, *args)
+        finally:
+            self.ctx.telemetry.db_response(time.perf_counter() - started)
+
+    async def _run(self, fn: Callable[..., Any], *args: Any) -> Any:
         if self.refusing:
             raise BankError(503, "DB_CONNECTION_FAILED", "connection refused")
         try:
@@ -91,6 +100,10 @@ async def lifespan(ctx: ServiceContext) -> AsyncIterator[None]:
     pool = ConnectionPool(ctx)
     pool.open()
     ctx.pool = pool  # type: ignore[attr-defined]
+    ctx.telemetry.gauge("bank_db_pool_size", "Database connections in the pool",
+                        lambda: len(pool.all))
+    ctx.telemetry.gauge("bank_db_pool_in_use", "Database connections in use",
+                        lambda: len(pool.all) - pool.idle.qsize())
     ctx.faults.register("db_connection_failure", "refuse", pool.refuse)
     ctx.faults.register("db_connection_failure", "exhaust", pool.exhaust)
 

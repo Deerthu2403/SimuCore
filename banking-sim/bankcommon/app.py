@@ -16,13 +16,13 @@ from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from fastapi import Depends, FastAPI, Header, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+from prometheus_client import CONTENT_TYPE_LATEST
 
 from bankcommon.client import ServiceClient, TransportFactory
 from bankcommon.config import Settings, registry
 from bankcommon.errors import BankError
 from bankcommon.faults import Fault, FaultEngine, FaultRequest
-from bankcommon.telemetry import Telemetry
+from bankcommon.telemetry import Telemetry, header_bytes
 
 log = logging.getLogger("bank")
 QUEUE_TIMEOUT_S = 1.0
@@ -38,14 +38,26 @@ class ServiceContext:
         self.name, self.settings = name, settings
         self.info = registry().services[name]
         self.faults = FaultEngine(settings.faults_enabled, settings.seed)
-        self.telemetry = Telemetry(name, settings.mem_limit_mb)
-        self.client = ServiceClient(name, settings.internal_key, transport_factory)
+        uses_db = name == "database" or "database" in registry().of(name)
+        self.telemetry = Telemetry(name, settings.mem_limit_mb, uses_db)
+        self.client = ServiceClient(name, settings.internal_key, transport_factory, self.telemetry)
         self.slots = asyncio.Semaphore(self.info["max_concurrency"])
         self.waiting = 0
         self.started_at = time.time()
         self.instance_id = uuid.uuid4().hex[:12]
         self.shutdown: Callable[[], None] | None = None
         self.self_check: Callable[[], Awaitable[bool]] | None = None
+        # Open client connections. Set by the process runner, which owns the sockets.
+        self.connections: Callable[[], int] = lambda: 0
+        self.in_flight = 0
+        t = self.telemetry
+        t.gauge("bank_available", "0 while the service refuses all work",
+                lambda: 0.0 if self.faults.get("downtime") else 1.0)
+        t.gauge("bank_active_connections", "Open inbound TCP connections, idle ones included",
+                lambda: self.connections())
+        t.gauge("bank_request_queue_length", "Requests waiting for a worker slot",
+                lambda: self.waiting)
+        t.gauge("bank_in_flight_requests", "Requests being worked on", lambda: self.in_flight)
         self.faults.register("resource_exhaustion", "slots", self._hold_slots)
         self.faults.register("resource_exhaustion", "memory", self._hold_memory)
 
@@ -84,12 +96,21 @@ class SimulationMiddleware:
         incoming = dict(scope["headers"]).get(b"x-correlation-id", b"").decode("latin-1")
         corr = incoming if _SAFE_ID.fullmatch(incoming) else uuid.uuid4().hex
         scope.setdefault("state", {})["correlation_id"] = corr
+        received, sent = header_bytes(scope["headers"]), 0
+
+        async def tracked_receive():
+            nonlocal received
+            message = await receive()
+            received += len(message.get("body", b""))
+            return message
 
         async def tracked_send(message) -> None:
-            nonlocal status
+            nonlocal status, sent
             if message["type"] == "http.response.start":
                 status = message["status"]
                 message["headers"] = [*message["headers"], (b"x-correlation-id", corr.encode())]
+                sent += header_bytes(message["headers"])
+            sent += len(message.get("body", b""))
             await send(message)
 
         async def reject(code: str, text: str) -> None:
@@ -108,15 +129,18 @@ class SimulationMiddleware:
             elif not await self._acquire_slot():
                 await reject("OVERLOADED", "No free worker slot")
             else:
+                ctx.in_flight += 1
                 try:
                     await ctx.faults.delay()
-                    await self.app(scope, receive, tracked_send)
+                    await self.app(scope, tracked_receive, tracked_send)
                 finally:
+                    ctx.in_flight -= 1
                     ctx.slots.release()
         finally:
             if not health:
                 route = getattr(scope.get("route"), "path", "unmatched")
                 ctx.telemetry.record(scope["method"], route, status, time.perf_counter() - start)
+                ctx.telemetry.traffic(received, sent)
 
     async def _acquire_slot(self) -> bool:
         self.ctx.waiting += 1
@@ -221,7 +245,11 @@ def build_service(name: str, settings: Settings, *, lifespan: Lifespan | None = 
     # --------------------------------------------------------------- telemetry
     @app.get("/metrics", tags=["telemetry"])
     async def metrics() -> Response:
-        return Response(generate_latest(ctx.telemetry.registry), media_type=CONTENT_TYPE_LATEST)
+        fault = ctx.faults.get("telemetry_fault")
+        mode = fault.req.mode if fault else None
+        if mode == "slow":
+            await asyncio.sleep(15)
+        return Response(ctx.telemetry.exposition(mode), media_type=CONTENT_TYPE_LATEST)
 
     @app.get("/telemetry", tags=["telemetry"])
     async def telemetry() -> dict:

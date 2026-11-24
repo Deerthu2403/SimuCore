@@ -21,6 +21,7 @@ async def twin_stream(ws: WebSocket) -> None:
             "type": "snapshot",
             "version": state.version,
             "source": app.state.sync.adapter.name,
+            "origin": app.state.sync.adapter.origin,
             "topology": state.topology.model_dump(mode="json") if state.topology else None,
             "states": [s.model_dump(mode="json") for s in state.states.values()],
         })

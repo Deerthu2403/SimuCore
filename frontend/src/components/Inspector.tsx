@@ -2,12 +2,23 @@ import { useMemo, useState } from "react";
 import { api } from "../services/api";
 import { useTwinStore } from "../store/twinStore";
 
+function formatRate(bytesPerSecond: number): string {
+  if (bytesPerSecond >= 1e6) return `${(bytesPerSecond / 1e6).toFixed(1)} MB/s`;
+  if (bytesPerSecond >= 1e3) return `${(bytesPerSecond / 1e3).toFixed(1)} kB/s`;
+  return `${bytesPerSecond.toFixed(0)} B/s`;
+}
+
 const METRIC_LABELS: Record<string, [string, (v: number) => string]> = {
   cpu_pct: ["CPU", (v) => `${v.toFixed(1)} %`],
   mem_pct: ["Memory", (v) => `${v.toFixed(1)} %`],
   latency_ms: ["Latency p95", (v) => `${v.toFixed(1)} ms`],
   error_rate: ["Error rate", (v) => `${(v * 100).toFixed(2)} %`],
   rps: ["Throughput", (v) => `${v.toFixed(0)} req/s`],
+  net_rx_bps: ["Network in", formatRate],
+  net_tx_bps: ["Network out", formatRate],
+  db_response_ms: ["DB response", (v) => `${v.toFixed(1)} ms`],
+  active_connections: ["Connections", (v) => v.toFixed(0)],
+  queue_length: ["Queue", (v) => v.toFixed(0)],
   availability: ["Availability", (v) => (v > 0 ? "up" : "DOWN")],
 };
 

@@ -60,5 +60,5 @@ export interface PropagationResponse {
 }
 
 export type TwinMessage =
-  | { type: "snapshot"; version: number; source: string; topology: Topology; states: NodeState[] }
-  | { type: "delta"; version: number; states: NodeState[] };
+  | { type: "snapshot"; version: number; source: string; origin: string | null; topology: Topology; states: NodeState[] }
+  | { type: "delta"; version: number; states: NodeState[]; origin: string | null };

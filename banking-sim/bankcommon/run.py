@@ -28,6 +28,7 @@ def main() -> None:
         server.should_exit = True
 
     app.state.ctx.shutdown = stop
+    app.state.ctx.connections = lambda: len(server.server_state.connections)
     server.run()
 
 

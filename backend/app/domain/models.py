@@ -76,6 +76,15 @@ STANDARD_METRICS: tuple[str, ...] = (
     "availability",
 )
 
+#: Extra metrics a source may deliver. Shown and exported, but health does not depend on them.
+OPTIONAL_METRICS: tuple[str, ...] = (
+    "net_rx_bps",
+    "net_tx_bps",
+    "db_response_ms",
+    "active_connections",
+    "queue_length",
+)
+
 
 class Node(BaseModel):
     id: str

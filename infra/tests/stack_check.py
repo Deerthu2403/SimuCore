@@ -37,9 +37,11 @@ from app.simulation.infrastructure import SimulatedBankInfrastructure  # noqa: E
 from app.twin.state import TwinState  # noqa: E402
 
 PROJECT = "simucore-stack-test"
-SERVICES = ["postgres", "backend", "frontend", "prometheus", "grafana"]
+SERVICES = ["postgres", "backend", "frontend", "prometheus", "grafana", "monitoring"]
+UNPUBLISHED = {"node-exporter", "postgres-exporter"}  # no ports on this PC, no health check
 SECRETS = {k: secrets.token_hex(16) for k in
-           ("POSTGRES_PASSWORD", "GRAFANA_DB_PASSWORD", "GRAFANA_ADMIN_PASSWORD")}
+           ("POSTGRES_PASSWORD", "GRAFANA_DB_PASSWORD", "GRAFANA_ADMIN_PASSWORD",
+            "MONITOR_DB_PASSWORD", "EXPORTER_DB_PASSWORD")}
 ENV = {"POSTGRES_USER": "simucore", "GRAFANA_ADMIN_USER": "admin", **SECRETS}
 GRAFANA = "http://127.0.0.1:3000"
 CHECKS = []
@@ -120,11 +122,16 @@ async def insert_topology(conn, version: int, topo: m.Topology) -> None:
 
 
 # ------------------------------------------------------------------------- platform
-@check("P01", "All five containers become healthy; ports are reachable from this PC only")
+@check("P01", "All containers run and are healthy; ports are reachable from this PC only")
 async def p01(s: Stack) -> dict:
     rows = s.ps()
-    assert set(rows) == set(SERVICES)
+    assert rows.pop("migrate")["ExitCode"] == 0
+    assert set(rows) == {*SERVICES, *UNPUBLISHED}
     for name, r in rows.items():
+        if name in UNPUBLISHED:
+            assert r["State"] == "running", (name, r["Status"])
+            assert not any(p["PublishedPort"] for p in r["Publishers"] or []), name
+            continue
         assert r["Health"] == "healthy", (name, r["Status"])
         hosts = {p["URL"] for p in r["Publishers"] if p["PublishedPort"]}
         assert hosts == {"127.0.0.1"}, (name, hosts)
@@ -150,6 +157,8 @@ async def p02(s: Stack) -> dict:
     env = s.compose("exec", "-T", "backend", "env")
     assert SECRETS["GRAFANA_ADMIN_PASSWORD"] not in env
     assert SECRETS["GRAFANA_DB_PASSWORD"] not in env
+    mon = s.compose("exec", "-T", "monitoring", "env")
+    assert not any(v in mon for k, v in SECRETS.items() if k != "MONITOR_DB_PASSWORD")
     missing = subprocess.run(["docker", "compose", "-f", "infra/docker-compose.yml", "config",
                               "-q"], cwd=ROOT, env=s.environ, capture_output=True)
     assert missing.returncode != 0, "stack must not start without passwords"
@@ -167,7 +176,7 @@ async def p03(s: Stack) -> dict:
         "SELECT count(*) FROM pg_class WHERE relnamespace='public'::regnamespace "
         "AND relkind IN ('r','p') AND NOT relispartition")
     await conn.close()
-    assert n == 22, n
+    assert n == 25, n  # 22 + infra_metric_sample + monitoring_event + schema_migration
     return {"tables": n}
 
 
@@ -215,7 +224,8 @@ async def p05(s: Stack) -> dict:
                     "INSERT INTO node_state_snapshot VALUES($1,$2,$3,$4,$5)", st.updated_at,
                     state.version, st.node_id, st.status.value, J(st.metrics))
             samples += len(batch)
-        assert await conn.fetchval("SELECT count(*) FROM metric_sample") == samples
+        assert await conn.fetchval("SELECT count(*) FROM metric_sample "
+                                   "WHERE node_id NOT LIKE 'bank-%'") == samples
     return {"nodes": 27 + 8, "samples": samples}
 
 
@@ -340,7 +350,7 @@ async def p08(s: Stack) -> dict:
     return {}
 
 
-@check("P09", "Monthly partitions work; measured: what the default partition prevents")
+@check("P09", "Monthly partitions work; measured: creating one after its data arrived")
 async def p09(s: Stack) -> dict:
     part = ("CREATE TABLE metric_sample_y2031m01 PARTITION OF metric_sample "
             "FOR VALUES FROM ('2031-01-01') TO ('2031-02-01')")
@@ -348,10 +358,12 @@ async def p09(s: Stack) -> dict:
     async with rolled_back(s) as conn:
         await conn.execute(part)
         await conn.execute(row)
-        assert await conn.fetchval("SELECT tableoid::regclass::text FROM metric_sample") == \
-            "metric_sample_y2031m01"
+        assert await conn.fetchval(
+            "SELECT tableoid::regclass::text FROM metric_sample WHERE node_id = 'a'"
+        ) == "metric_sample_y2031m01"
         await conn.execute("DROP TABLE metric_sample_y2031m01")  # retention
-        assert await conn.fetchval("SELECT count(*) FROM metric_sample") == 0
+        assert await conn.fetchval(
+            "SELECT count(*) FROM metric_sample WHERE node_id = 'a'") == 0
     async with rolled_back(s) as conn:
         await conn.execute(row)  # arrives before its partition exists
         try:
@@ -365,7 +377,7 @@ async def p09(s: Stack) -> dict:
 @check("P10", "Grafana's database role can read and do nothing else")
 async def p10(s: Stack) -> dict:
     conn = await s.db("grafana_reader", SECRETS["GRAFANA_DB_PASSWORD"])
-    assert await conn.fetchval("SELECT count(*) FROM metric_sample") == 0
+    assert await conn.fetchval("SELECT count(*) FROM metric_sample") > 0  # the monitor's
     attempts = ["INSERT INTO audit_log(actor,action) VALUES('x','y')", "DELETE FROM audit_log",
                 "DROP TABLE audit_log", "CREATE TABLE evil(i int)", "TRUNCATE metric_sample",
                 "CREATE ROLE evil", "ALTER ROLE grafana_reader SUPERUSER"]
@@ -420,10 +432,12 @@ async def p12(s: Stack) -> dict:
             targets = (await h.get("/api/v1/targets")).json()["data"]["activeTargets"]
             r = (await h.get("/api/v1/query", params={"query": "count(simucore_node_metric)"}))
             data = r.json()["data"]["result"]
-            if targets[0]["health"] == "up" and data:
+            health = {t["labels"]["job"]: t["health"] for t in targets}
+            if health.get("simucore-backend") == "up" and data:
                 break
             await asyncio.sleep(1)
-    assert [t["health"] for t in targets] == ["up"], targets
+    expected = {"prometheus", "simucore-backend", "monitoring", "node", "postgres"}
+    assert {j for j, h in health.items() if h == "up"} >= expected, health
     assert data[0]["value"][1] == str(27 * 6), data
     return {"series": int(data[0]["value"][1])}
 

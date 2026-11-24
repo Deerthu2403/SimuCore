@@ -9,6 +9,7 @@ from app.simulation.infrastructure import SimulatedBankInfrastructure
 
 class SimulatedAdapter(TelemetryAdapter):
     name = "simulated"
+    origin = "synthetic"
 
     def __init__(self, infrastructure: SimulatedBankInfrastructure) -> None:
         self._infra = infrastructure

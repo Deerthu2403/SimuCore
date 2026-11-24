@@ -12,6 +12,7 @@ import httpx
 
 from bankcommon.config import registry, service_url
 from bankcommon.errors import DependencyUnavailable, UndeclaredDependency
+from bankcommon.telemetry import Telemetry, header_bytes
 
 TransportFactory = Callable[[str], httpx.AsyncBaseTransport | None]
 
@@ -60,8 +61,9 @@ class CircuitBreaker:
 
 class ServiceClient:
     def __init__(self, service: str, internal_key: str,
-                 transport_factory: TransportFactory | None = None) -> None:
-        self.service = service
+                 transport_factory: TransportFactory | None = None,
+                 telemetry: Telemetry | None = None) -> None:
+        self.service, self.telemetry = service, telemetry
         self.edges = registry().of(service)
         self.calls: Counter[str] = Counter()
         self.failed: Counter[str] = Counter()
@@ -87,11 +89,13 @@ class ServiceClient:
         if not breaker.allow():
             raise DependencyUnavailable(self.service, target, "circuit open", breaker.last_path)
         self.calls[target] += 1
+        started = time.perf_counter()
         try:
             resp, reason = await self._send(target, method, path, json, params, correlation_id)
         except BaseException:
             breaker.abandon()
             raise
+        self._measure(target, resp, time.perf_counter() - started)
         if resp is not None and resp.status_code < 500:
             breaker.success()
             return resp
@@ -120,6 +124,17 @@ class ServiceClient:
             except STALE_CONNECTION as exc:
                 reason = f"connection lost ({type(exc).__name__})"
         return None, reason
+
+    def _measure(self, target: str, resp: httpx.Response | None, seconds: float) -> None:
+        if self.telemetry is None:
+            return
+        if target == "database":  # timeouts and refusals count: that is the response time felt
+            self.telemetry.db_response(seconds)
+        if resp is not None:
+            req = resp.request
+            self.telemetry.traffic(
+                sent=header_bytes(req.headers.raw) + len(req.content),
+                received=header_bytes(resp.headers.raw) + len(resp.content))
 
     async def ping(self, target: str) -> bool:
         """Liveness probe used by readiness checks. Bypasses the circuit breaker."""

@@ -106,6 +106,15 @@ code { font-size: 12px; color: var(--accent); }
 }
 .layer-label { color: var(--muted); font-size: 12px; white-space: nowrap; pointer-events: none; }
 
+.synthetic-badge { border: 1px solid var(--degraded); color: var(--degraded); padding: 0 8px; border-radius: 10px; font-weight: 600; }
+.event-list { list-style: none; margin: 6px 0 0; padding: 0; }
+.event-list li { display: flex; gap: 6px; padding: 3px 0; align-items: baseline; overflow-wrap: anywhere; }
+.event-list .sev { font-size: 10px; text-transform: uppercase; font-weight: 600; min-width: 52px; }
+.sev-critical .sev { color: var(--critical); }
+.sev-high .sev, .sev-medium .sev { color: var(--degraded); }
+.sev-low .sev, .sev-info .sev { color: var(--muted); }
+button.link { background: none; border: none; padding: 0; color: inherit; text-align: left; text-decoration: underline; }
+
 @media (max-width: 900px) {
   .module-nav { display: none; }
   .right-column { width: auto; left: 12px; top: auto; bottom: 60px; max-height: 45%; }

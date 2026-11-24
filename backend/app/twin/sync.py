@@ -12,7 +12,7 @@ from prometheus_client import Gauge
 from app.adapters.base import TelemetryAdapter
 from app.core.events import EventBus, Topics
 from app.domain.contracts import TwinDelta
-from app.domain.models import STANDARD_METRICS, HealthStatus, NodeState
+from app.domain.models import OPTIONAL_METRICS, STANDARD_METRICS, HealthStatus, NodeState
 from app.twin.state import TwinState
 
 log = logging.getLogger(__name__)
@@ -68,7 +68,8 @@ class TwinSynchronizer:
             if changed:
                 self._export(changed)
                 await self.bus.publish(Topics.TWIN_DELTA,
-                                       TwinDelta(version=self.state.version, states=changed))
+                                       TwinDelta(version=self.state.version, states=changed,
+                                                 origin=self.adapter.origin))
         return changed
 
     async def _loop(self) -> None:
@@ -85,7 +86,7 @@ class TwinSynchronizer:
         TWIN_VERSION.set(self.state.version)
         for st in states:
             NODE_STATUS.labels(st.node_id).set(HealthStatus(st.status).severity)
-            for m in STANDARD_METRICS:
+            for m in (*STANDARD_METRICS, *OPTIONAL_METRICS):
                 if m in st.metrics:
                     NODE_METRIC.labels(st.node_id, m).set(st.metrics[m])
                 else:  # e.g. a down service has no CPU: do not keep exporting the last one

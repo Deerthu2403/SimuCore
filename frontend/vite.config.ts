@@ -15,6 +15,11 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": backend,
+      "/monitoring": {
+        target: process.env.SIMUCORE_MONITORING_URL ?? "http://localhost:8200",
+        ws: true,
+        rewrite: (path) => path.replace(/^\/monitoring/, ""),
+      },
       "/ws": { target: backend.replace(/^http/, "ws"), ws: true },
     },
   },

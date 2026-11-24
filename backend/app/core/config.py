@@ -1,8 +1,11 @@
 """Typed application settings. All values can be overridden with SIMUCORE_* env vars."""
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DEFAULT_MAP = Path(__file__).resolve().parents[3] / "banking-sim" / "dependency_map.json"
 
 
 class Settings(BaseSettings):
@@ -27,6 +30,10 @@ class Settings(BaseSettings):
 
     # Simulated banking microservices (adapter "bank_services"; read-only)
     bank_url_template: str = "http://127.0.0.1:{port}"
+    bank_map_path: Path = DEFAULT_MAP
+
+    # Monitoring service (adapter "monitoring"; read-only)
+    monitoring_url: str = "http://127.0.0.1:8200"
 
     # Prometheus adapter (future production integration; read-only)
     prometheus_url: str = "http://localhost:9090"

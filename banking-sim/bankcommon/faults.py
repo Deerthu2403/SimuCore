@@ -5,6 +5,11 @@
   resource_exhaustion  mode=cpu     real CPU burn inside the process, graded by magnitude
                        mode=memory  real allocation up to the memory budget; requests are shed
                        mode=slots   occupies concurrency slots so requests queue and are shed
+  telemetry_fault      the service works but its /metrics page does not
+                       mode=missing  some series disappear
+                       mode=invalid  some series carry impossible values
+                       mode=garbage  the page is not metrics at all
+                       mode=slow     the page takes longer than any scraper waits
   db_connection_failure (database service only)
                        mode=refuse  connections fail at once
                        mode=exhaust holds real pool connections so acquires time out
@@ -30,10 +35,12 @@ MAX_DURATION_S = 600
 MAX_LATENCY_MS = 10_000
 MAX_CPU_THREADS = 4
 CPU_SLICE_S = 0.1
+TELEMETRY_MODES = ("missing", "invalid", "garbage", "slow")
 
 
 class FaultRequest(BaseModel):
-    type: Literal["downtime", "latency", "resource_exhaustion", "db_connection_failure"]
+    type: Literal["downtime", "latency", "resource_exhaustion", "db_connection_failure",
+                  "telemetry_fault"]
     mode: str | None = None
     duration_s: float = Field(gt=0, le=MAX_DURATION_S)
     latency_ms: float = Field(default=0, ge=0, le=MAX_LATENCY_MS)
@@ -56,6 +63,10 @@ class Fault:
 Hook = Callable[[Fault], Awaitable[Any]]
 
 
+async def _no_effect(fault: Fault) -> None:
+    return None
+
+
 class FaultEngine:
     def __init__(self, enabled: bool = True, seed: int = 42) -> None:
         self.enabled = enabled
@@ -63,7 +74,10 @@ class FaultEngine:
         self._active: dict[str, Fault] = {}
         # Fault types that take a mode, and the hook that applies each one. Plain types
         # (downtime, latency) have no hook: the middleware reads them directly.
-        self._hooks: dict[str, dict[str, Hook]] = {"resource_exhaustion": {"cpu": self._burn_cpu}}
+        self._hooks: dict[str, dict[str, Hook]] = {
+            "resource_exhaustion": {"cpu": self._burn_cpu},
+            "telemetry_fault": dict.fromkeys(TELEMETRY_MODES, _no_effect),  # read by /metrics
+        }
 
     def register(self, type_: str, mode: str, hook: Hook) -> None:
         self._hooks.setdefault(type_, {})[mode] = hook

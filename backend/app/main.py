@@ -12,7 +12,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import make_asgi_app
 
 from app import __version__
-from app.adapters import BankServicesAdapter, SimulatedAdapter, TelemetryAdapter
+from app.adapters import (
+    BankServicesAdapter,
+    MonitoringAdapter,
+    SimulatedAdapter,
+    TelemetryAdapter,
+)
 from app.api.v1 import api_router
 from app.api.v1.ws import router as ws_router
 from app.core.config import Settings, get_settings
@@ -33,7 +38,9 @@ def build_adapter(
             incident_rate=settings.incident_rate, tick_s=settings.telemetry_interval_s)
         return SimulatedAdapter(infra), infra
     if settings.telemetry_adapter == "bank_services":
-        return BankServicesAdapter(settings.bank_url_template), None
+        return BankServicesAdapter(settings.bank_url_template, settings.bank_map_path), None
+    if settings.telemetry_adapter == "monitoring":
+        return MonitoringAdapter(settings.monitoring_url, settings.bank_map_path), None
     raise ValueError(f"Adapter {settings.telemetry_adapter!r} is not available")
 
 

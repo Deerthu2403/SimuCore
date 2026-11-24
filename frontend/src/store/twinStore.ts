@@ -8,6 +8,7 @@ interface TwinStore {
   connection: Connection;
   version: number;
   source: string | null;
+  origin: string | null;
   topology: Topology | null;
   states: Record<string, NodeState>;
   selectedId: string | null;
@@ -17,6 +18,7 @@ interface TwinStore {
   setConnection: (c: Connection) => void;
   setSnapshot: (t: Topology, s: NodeState[], version: number, source: string) => void;
   applyDelta: (s: NodeState[], version: number) => void;
+  setOrigin: (o: string | null) => void;
   select: (id: string | null) => void;
   setImpact: (r: PropagationResponse | null) => void;
   toggleLayer: (l: NodeLayer) => void;
@@ -28,6 +30,7 @@ export const useTwinStore = create<TwinStore>((set) => ({
   connection: "connecting",
   version: 0,
   source: null,
+  origin: null,
   topology: null,
   states: {},
   selectedId: null,
@@ -48,6 +51,7 @@ export const useTwinStore = create<TwinStore>((set) => ({
     }),
   applyDelta: (delta, version) =>
     set((st) => ({ states: { ...st.states, ...index(delta) }, version })),
+  setOrigin: (origin) => set({ origin }),
   select: (selectedId) => set({ selectedId }),
   setImpact: (impact) => set({ impact }),
   toggleLayer: (l) =>

@@ -32,6 +32,7 @@ LIMITS = {"cpu_pct": 100.0, "mem_pct": 100.0, "error_rate": 1.0, "availability":
 
 class BankServicesAdapter(TelemetryAdapter):
     name = "bank_services"
+    origin = "measured"
 
     def __init__(self, url_template: str = "http://127.0.0.1:{port}",
                  map_path: Path = DEFAULT_MAP, timeout_s: float = 1.0,

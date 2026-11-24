@@ -32,6 +32,7 @@ flowchart LR
 | **7 Hardening & evaluation** | 1 000+ node topology, InstancedMesh rendering, Redis/NATS bus option, load tests, experiment notebooks, final report | P5, P6 | 60 fps at 1 000 nodes; documented experimental results |
 | **Banking services** *(done, added to the plan after Phase 1)* | Eight FastAPI microservices, enforced dependency map, workloads, fault injection, Docker files, live scenarios (`banking-sim/`, doc 08) | P1 | all live scenarios pass, as local processes and as Docker containers |
 | **Live twin adapter** *(done)* | Read-only adapter from `/telemetry` to the twin, so the 3D view shows the running services | Banking services | killing a service turns its node red within 3 s |
+| **Monitoring** *(done)* | Monitoring service, full metric set, Prometheus and exporters, PostgreSQL history, quality events, WebSocket, twin adapter, synthetic data (`monitoring/`, doc 09). Covers most of P2 Persistence: metric storage, partitions, history API | Banking services | every metric matches independent truth through two pipelines; every monitoring failure is detected |
 
 The phase numbers above are unchanged; the two unnumbered rows come between P1 and P2.
 
