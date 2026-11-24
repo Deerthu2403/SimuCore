@@ -66,7 +66,8 @@ Design notes:
   such rows; the monitoring service calls it hourly.
 * Changes after `001` and `002` are in `database/migrations/`, applied once each by the `migrate`
   container. `003_monitoring.sql` adds the full metric set, `origin`, infrastructure samples and
-  monitoring events.
+  monitoring events; `004_links_and_twin.sql` adds network connections, the bank database's pool and
+  the history of the digital twin.
 * The rule "every recommendation has an explanation" is enforced by the Python contract, not yet by
   the database: a recommendation row can exist without an explanation row.
 * Retention: raw `metric_sample` partitions dropped after 30 days (configurable);

@@ -129,6 +129,11 @@ def create_app(settings: Settings | None = None, source: Source | None = None) -
         return {"fresh": col().fresh, "overview": col().overview(),
                 "components": col().infra_view()}
 
+    @app.get("/api/v1/links/current", tags=["network connections"])
+    async def links_current() -> dict:
+        return {"fresh": col().fresh, "origin": col().current.origin if col().current else None,
+                "links": col().links_view()}
+
     # ------------------------------------------------------------------- history
     @app.get("/api/v1/metrics/history/{service}", tags=["metrics"])
     async def history(service: Name, metrics: str = "cpu_pct,mem_pct,latency_ms,rps,error_rate",

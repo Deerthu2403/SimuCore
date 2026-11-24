@@ -42,8 +42,8 @@ class ScriptedSource:
             noon += timedelta(minutes=5)
         c = self.inner.at(noon, with_infra)
         now = utcnow()
-        c = Collection(now, "measured", c.samples, c.infra)
-        for s in c.samples:
+        c = Collection(now, "measured", c.samples, c.infra, c.links)
+        for s in (*c.samples, *c.links):
             s.ts = now
         self.edit(c)
         return c
@@ -114,6 +114,42 @@ async def test_database_metric_is_not_expected_where_there_is_no_database():
         await col.tick()
     assert "db_response_ms" not in service(col.current, "notification").metrics
     assert col.book.open == {}
+
+
+async def test_unmeasured_connection_is_detected():
+    src = ScriptedSource()
+    col = make(src)
+
+    def edit(c):
+        c.links = [k for k in c.links if k.id != "account->database"]
+        next(k for k in c.links if k.id == "payment->database").put("latency_ms", -3)
+    src.edit = edit
+    for _ in range(4):
+        await col.tick()
+    found = {(e.issue.kind, e.issue.service, e.issue.metric) for e in col.book.open.values()}
+    assert found == {("metric_missing", "account", "link:database"),
+                     ("metric_invalid", "payment", "link:database")}
+
+
+async def test_a_silent_caller_says_nothing_about_its_connections():
+    src = ScriptedSource()
+    col = make(src)
+
+    def edit(c):
+        service(c, "account").status = "unresponsive"
+        c.links = [k for k in c.links if k.source != "account"]
+    src.edit = edit
+    for _ in range(5):
+        await col.tick()
+    assert {e.issue.kind for e in col.book.open.values()} == {"service_unresponsive"}
+
+
+async def test_message_identifies_the_run_and_the_moment():
+    a, b = make(ScriptedSource()), make(ScriptedSource())
+    await a.tick()
+    m = a.message("update")
+    assert m["collected_at"] == a.current.ts.isoformat() and a.run_id != b.run_id
+    assert len(m["links"]) == 14 and {"deployment"} <= m["services"][0].keys()
 
 
 async def test_source_failure_keeps_last_data_and_marks_it_stale():
@@ -198,11 +234,12 @@ async def test_overview_weights_errors_by_traffic():
 
 # ------------------------------------------------------------------ store buffer
 def test_buffer_is_bounded_and_losses_are_counted():
-    store = Store("postgresql://nowhere", "x", buffer_rows=20, retention_days=30)
+    per_tick = 8 + sum(len(s.targets) for s in SERVICES)
+    store = Store("postgresql://nowhere", "x", buffer_rows=30, retention_days=30)
     src = SyntheticSource(Settings(), SERVICES)
     for i in range(5):
         store.add(src.at(T0 + timedelta(seconds=i), with_infra=False))
-    assert len(store.buffer) == 20 and store.dropped == 20
+    assert len(store.buffer) == 30 and store.dropped == 5 * per_tick - 30
     assert store.buffer[-1][1][0] == T0 + timedelta(seconds=4)  # the newest are kept
 
 
@@ -256,7 +293,9 @@ def test_current_metrics(client):
     d = client.get("/api/v1/metrics/current").json()
     assert len(d["services"]) == 8 and d["fresh"] and d["overview"]["up"] == 8
     one = client.get("/api/v1/metrics/current/account").json()
-    assert set(one["metrics"]) == {m.key for m in METRICS}
+    assert set(one["metrics"]) == {m.key for m in METRICS if not m.only}
+    links = client.get("/api/v1/links/current").json()
+    assert len(links["links"]) == 14 and links["origin"] == "measured"
     assert client.get("/api/v1/metrics/current/nobody").status_code == 404
     assert client.get("/api/v1/infrastructure/current").json()["components"]
 
@@ -315,6 +354,7 @@ def test_websocket_subscription(client):
             if len(m["services"]) == 2:
                 break
         assert {s["service"] for s in m["services"]} == {"account", "fraud"}
+        assert {k["source"] for k in m["links"]} == {"account", "fraud"}
 
 
 @pytest.mark.parametrize("text", ["nonsense", "[]", '{"type":"subscribe","services":["x"]}',

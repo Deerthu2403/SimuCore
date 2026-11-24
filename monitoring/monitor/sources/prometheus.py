@@ -9,7 +9,14 @@ import time
 import httpx
 
 from monitor.config import ServiceSpec, Settings, check_host
-from monitor.models import Collection, InfraSample, Sample, SourceUnavailable, utcnow
+from monitor.models import (
+    Collection,
+    InfraSample,
+    LinkSample,
+    Sample,
+    SourceUnavailable,
+    utcnow,
+)
 
 # One query per metric, answered for all services at once. {w} is the rate window.
 SERVICE_QUERIES: dict[str, str] = {
@@ -30,10 +37,22 @@ SERVICE_QUERIES: dict[str, str] = {
     "active_connections": "bank_active_connections",
     "queue_length": "bank_request_queue_length",
     "in_flight": "bank_in_flight_requests",
+    "db_pool_in_use": "bank_db_pool_in_use",
+    "db_pool_size": "bank_db_pool_size",
+    "db_failure_rate": "rate(bank_db_query_failures_total[{w}]) / "
+                       "rate(bank_db_response_seconds_count{{service=\"database\"}}[{w}])",
     "availability": "bank_available",
 }
+# One value per (service, target): the network connections.
+LINK_QUERIES: dict[str, str] = {
+    "calls_per_s": "rate(bank_link_attempts_total[{w}])",
+    "failure_rate": "rate(bank_link_failures_total[{w}]) / rate(bank_link_attempts_total[{w}])",
+    "latency_ms": "rate(bank_link_seconds_sum[{w}]) / rate(bank_link_seconds_count[{w}]) * 1000",
+    "circuit": "bank_link_circuit",
+}
 # Ratios that are 0/0 while nothing happens. For any other metric NaN is an invalid value.
-NAN_MEANS_IDLE = {"latency_ms", "latency_mean_ms", "error_rate", "db_response_ms"}
+NAN_MEANS_IDLE = {"latency_ms", "latency_mean_ms", "error_rate", "db_response_ms",
+                  "db_failure_rate", "failure_rate"}
 
 INFRA_QUERIES: dict[str, dict[str, str]] = {
     "docker-host": {
@@ -85,21 +104,28 @@ class PrometheusSource:
             raise SourceUnavailable(f"Prometheus answered nonsense: {exc!r}") from exc
 
     async def _collect(self, with_infra: bool) -> Collection:
-        keys = list(SERVICE_QUERIES)
-        now, up, age, errors, *values = await asyncio.gather(
+        keys, link_keys = list(SERVICE_QUERIES), list(LINK_QUERIES)
+        now, up, age, errors, deployment, *values = await asyncio.gather(
             self._scalar("time()"),
             self._vector('up{job="bank"}'),
             self._vector('time() - timestamp(up{job="bank"})'),
             self._target_errors(),
-            *(self._vector(SERVICE_QUERIES[k].format(w=self.window)) for k in keys))
+            self._deployments(),
+            *(self._vector(SERVICE_QUERIES[k].format(w=self.window)) for k in keys),
+            *(self._pairs(LINK_QUERIES[k].format(w=self.window)) for k in link_keys))
+        values, link_values = values[:len(keys)], values[len(keys):]
         if not up:
             raise SourceUnavailable("Prometheus has no targets in job 'bank'")
         skew = time.time() - now
         ts = utcnow()
         samples = [self._sample(s, ts, up, age, errors, dict(zip(keys, values, strict=True)))
                    for s in self.services]
+        for s in samples:
+            s.deployment = deployment.get(s.service)
+        links = self._links(ts, {s.service for s in samples if s.status == "up"},
+                            dict(zip(link_keys, link_values, strict=True)))
         infra = await self._infra(ts) if with_infra else []
-        return Collection(ts, "measured", samples, infra, round(skew, 2))
+        return Collection(ts, "measured", samples, infra, links, round(skew, 2))
 
     def _sample(self, s: ServiceSpec, ts, up, age, errors, values) -> Sample:
         sample = Sample(s.name, s.node_id, ts, "up")
@@ -128,6 +154,19 @@ class PrometheusSource:
         if sample.metrics.get("availability") == 0:
             sample.status, sample.reason = "down", "service reports itself unavailable"
         return sample
+
+    def _links(self, ts, reporting: set[str], values) -> list[LinkSample]:
+        """Connections of the services that report; a silent caller says nothing about its own."""
+        out = []
+        for s in self.services:
+            for target in s.targets if s.name in reporting else ():
+                link = LinkSample(s.name, target, ts)
+                for key, vector in values.items():
+                    if (s.name, target) in vector:
+                        v = vector[(s.name, target)]
+                        link.put(key, None if math.isnan(v) and key in NAN_MEANS_IDLE else v)
+                out.append(link)
+        return out
 
     async def _infra(self, ts) -> list[InfraSample]:
         out = []
@@ -158,6 +197,16 @@ class PrometheusSource:
         data = await self._query(q)
         return {x["metric"]["service"]: float(x["value"][1]) for x in data["result"]
                 if "service" in x["metric"]}
+
+    async def _pairs(self, q: str) -> dict[tuple[str, str], float]:
+        data = await self._query(q)
+        return {(x["metric"]["service"], x["metric"]["target"]): float(x["value"][1])
+                for x in data["result"] if {"service", "target"} <= x["metric"].keys()}
+
+    async def _deployments(self) -> dict[str, str]:
+        data = await self._query("bank_info")
+        return {x["metric"]["service"]: x["metric"]["deployment"] for x in data["result"]
+                if x["metric"].get("deployment") in ("process", "container")}
 
     async def _scalar(self, q: str) -> float:
         return float((await self._query(q))["result"][1])

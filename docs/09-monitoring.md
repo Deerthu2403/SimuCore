@@ -54,6 +54,9 @@ flowchart LR
 | Service availability | `availability`, `status` | reachable and accepting work; history as a ratio |
 | Request queue length | `queue_length`, `in_flight` | requests waiting for, or holding, a worker slot |
 
+| *(added for the digital twin)* network connections | `calls_per_s`, `failure_rate`, `latency_ms`, `circuit` per service pair | measured by the caller for each of the 14 declared connections; calls refused by an open circuit count as failures |
+| *(added)* bank database | `db_pool_in_use`, `db_pool_size`, `db_failure_rate` | from the Database Service's connection pool |
+
 Rates use a 10 s window. The catalogue with units and limits is at `GET /api/v1/metrics/catalog`.
 
 **Service level:** the table above, per service. **Infrastructure level:** the Docker machine (CPU,
@@ -96,12 +99,12 @@ in turn scrapes the monitoring service, so the monitor's own death is visible th
 
 ## 4. Storage
 
-* `metric_sample` (service level) and `infra_metric_sample`, partitioned by month;
+* `metric_sample` (service level), `link_metric_sample` and `infra_metric_sample`, partitioned by month;
   `monitoring_event` for problems. Migration: `database/migrations/003_monitoring.sql`.
 * The one-shot `migrate` container applies migrations once each, on new and existing databases.
 * `monitor_writer` may append samples and manage its events. It cannot change or delete history.
   Partition upkeep goes through two functions that check their arguments.
-* During a database outage, rows wait in memory (50,000 rows, about 3 hours) and are written
+* During a database outage, rows wait in memory (120,000 rows, about 3 hours) and are written
   afterwards. Anything beyond that is counted and raised as an event. A row the database rejects is
   skipped and counted, so it cannot block the others.
 * Retention is 30 days, whole months at a time.
@@ -116,6 +119,7 @@ in turn scrapes the monitoring service, so the monitor's own death is visible th
 | GET | `/api/v1/metrics/current[/{service}]` | latest values |
 | GET | `/api/v1/metrics/history/{service}?metrics=&start=&end=&minutes=&step=&origin=` | average, minimum and maximum per step |
 | GET | `/api/v1/metrics/availability` | share of samples up, per service |
+| GET | `/api/v1/links/current` | network connections |
 | GET | `/api/v1/infrastructure/current`, `/history/{component}` | infrastructure level |
 | GET | `/api/v1/events/open`, `/history` | problems |
 | GET | `/api/v1/twin/samples` | for the digital twin backend |

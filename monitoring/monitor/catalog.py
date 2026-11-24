@@ -16,8 +16,11 @@ class Metric:
     maximum: float
     needs_traffic: bool = False  # legitimately has no value while the service is idle
     needs_database: bool = False  # only for services that use the database
+    only: str | None = None  # only for this service
 
     def applies_to(self, s: ServiceSpec) -> bool:
+        if self.only:
+            return s.name == self.only
         return s.uses_database or not self.needs_database
 
 
@@ -43,9 +46,18 @@ METRICS: tuple[Metric, ...] = (
            "Open inbound TCP connections, including idle ones and the scraper's own", 1e6),
     Metric("queue_length", "Queue length", "", "Requests waiting for a worker slot", 1e6),
     Metric("in_flight", "In flight", "", "Requests being worked on", 1e6),
+    Metric("db_pool_in_use", "Database connections in use", "",
+           "Connections of the bank's database pool that are busy", 1e6, only="database"),
+    Metric("db_pool_size", "Database pool size", "",
+           "Connections in the bank's database pool", 1e6, only="database"),
+    Metric("db_failure_rate", "Database failure rate", "ratio", "Share of queries that got no "
+           "connection or no answer", 1.0, needs_traffic=True, only="database"),
     Metric("availability", "Availability", "ratio", "1 = reachable and accepting work", 1.0),
 )
 BY_KEY = {m.key: m for m in METRICS}
+
+#: Metrics of a network connection between two services: key -> largest possible value.
+LINK_METRICS = {"calls_per_s": 1e6, "failure_rate": 1.0, "latency_ms": 1e6, "circuit": 2.0}
 
 
 def catalog() -> list[dict]:

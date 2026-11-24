@@ -12,7 +12,7 @@ import random
 from datetime import datetime
 
 from monitor.config import ServiceSpec, Settings
-from monitor.models import Collection, InfraSample, Sample, utcnow
+from monitor.models import Collection, InfraSample, LinkSample, Sample, utcnow
 
 BASE_RPS = {"authentication": 22, "database": 60, "account": 18, "transaction": 4, "customer": 5,
             "payment": 2, "fraud": 4, "notification": 2}
@@ -36,7 +36,24 @@ class SyntheticSource:
             infra = [InfraSample("synthetic-host", ts, "up", {
                 "cpu_pct": round(25 + 20 * self._daily(ts) + rng.gauss(0, 2), 2),
                 "mem_pct": round(50 + rng.gauss(0, 1), 2)})]
-        return Collection(ts, "synthetic", [self._sample(s, ts) for s in self.services], infra)
+        samples = [self._sample(s, ts) for s in self.services]
+        return Collection(ts, "synthetic", samples, infra, self._links(samples, ts))
+
+    def _links(self, samples: list[Sample], ts: datetime) -> list[LinkSample]:
+        by = {s.service: s for s in samples}
+        out = []
+        for spec in self.services:
+            if by[spec.name].status != "up":
+                continue
+            calls = (by[spec.name].metrics.get("rps") or 0.0)
+            for target in spec.targets:
+                link, up = LinkSample(spec.name, target, ts), by[target].status == "up"
+                link.put("calls_per_s", calls)
+                link.put("failure_rate", 0.0 if up else 1.0)
+                link.put("latency_ms", by[target].metrics.get("latency_mean_ms") if up else None)
+                link.put("circuit", 0.0 if up else 2.0)
+                out.append(link)
+        return out
 
     def _rng(self, *parts: object) -> random.Random:
         return random.Random(f"{self.seed}|{'|'.join(map(str, parts))}")
@@ -78,6 +95,9 @@ class SyntheticSource:
         values["mem_pct"] = values["mem_bytes"] / (256 * 1_048_576) * 100
         if s.uses_database:
             values["db_response_ms"] = 1.5 * load * max(0.2, rng.gauss(1, 0.2))
+        if s.name == "database":
+            values |= {"db_pool_size": 8.0, "db_pool_in_use": min(8.0, round(rps * 0.02 * load)),
+                       "db_failure_rate": 0.0}
         for k, v in values.items():
             sample.put(k, max(0.0, v))
         return sample

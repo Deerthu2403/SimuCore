@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID, uuid4
 
-from monitor.catalog import METRICS
+from monitor.catalog import LINK_METRICS, METRICS
 from monitor.config import ServiceSpec
 from monitor.models import Collection
 
@@ -83,6 +83,17 @@ def inspect(collection: Collection, services: tuple[ServiceSpec, ...]) -> list[I
             elif m.applies_to(spec) and m.key not in sample.metrics:
                 issues.append(Issue("metric_missing", f"{m.title} is not being delivered",
                                     spec.name, m.key))
+    up = {s.service for s in collection.samples if s.status == "up"}
+    links = {(k.source, k.target): k for k in collection.links}
+    for spec in services:
+        for target in spec.targets if spec.name in up else ():
+            link, name = links.get((spec.name, target)), f"link:{target}"
+            if link and link.invalid:
+                issues.append(Issue("metric_invalid", f"connection to {target} has impossible "
+                                    f"values: {link.invalid}", spec.name, name))
+            elif link is None or not LINK_METRICS.keys() <= link.metrics.keys():
+                issues.append(Issue("metric_missing", f"connection to {target} is not being "
+                                    "measured", spec.name, name))
     for c in collection.infra:
         if c.status != "up":
             issues.append(Issue("component_down", c.reason, c.component))

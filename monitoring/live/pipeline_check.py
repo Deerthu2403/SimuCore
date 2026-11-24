@@ -49,7 +49,7 @@ REQUIRED = ["cpu_pct", "mem_pct", "latency_ms", "rps", "error_rate", "net_rx_bps
             "db_response_ms", "active_connections", "availability", "queue_length"]
 PW = {k: secrets.token_hex(16) for k in (
     "POSTGRES_PASSWORD", "GRAFANA_DB_PASSWORD", "GRAFANA_ADMIN_PASSWORD", "MONITOR_DB_PASSWORD",
-    "EXPORTER_DB_PASSWORD")}
+    "EXPORTER_DB_PASSWORD", "TWIN_DB_PASSWORD")}
 WINDOW = 12.0  # rate window plus a tick: how long a steady state needs to fill the window
 CHECKS: list[tuple] = []
 
@@ -539,6 +539,60 @@ async def m14(lab: Lab) -> dict:
                 bad.append((service, k, round(a, 3), round(b, 3)))
     assert not bad, bad
     return {"metrics_compared": compared, "disagreements": 0}
+
+
+@check("M17", "Network connections: exact call rate, stopwatch latency, failures, open circuit")
+async def m17(lab: Lab) -> dict:
+    async def link(pipe: str, a: str, b: str) -> dict:
+        d = await lab.get(f"{PIPES[pipe]}/api/v1/links/current")
+        assert len(d["links"]) == 14 and d["origin"] == "measured"
+        return next(k for k in d["links"] if (k["source"], k["target"]) == (a, b))["metrics"]
+
+    # (+4 s: the direct pipeline keeps one scrape beyond its window, and data is up to a tick old)
+    await asyncio.sleep(WINDOW + 4)  # an earlier check's traffic must have left the window
+    async with steady(lab, lookup(lab), 12):
+        await asyncio.sleep(WINDOW + 4)
+        rates = {p: (await link(p, "customer", "database"))["calls_per_s"] for p in PIPES}
+        quiet = {p: await link(p, "transaction", "payment") for p in PIPES}
+        await lab.fault("database", "latency", latency_ms=150, jitter=0)
+        await asyncio.sleep(WINDOW + 4)
+        slow = {p: (await link(p, "customer", "database"))["latency_ms"] for p in PIPES}
+        times = []
+        for _ in range(10):
+            t = time.perf_counter()
+            await lab.http.get(lab.bank("database", "/internal/customers/CUST00001"),
+                               headers=lab.internal)
+            times.append((time.perf_counter() - t) * 1000)
+        await lab.clear()
+        await asyncio.sleep(2)
+        await lab.fault("database", "db_connection_failure", mode="refuse")
+        await asyncio.sleep(WINDOW + 4)
+        broken = {p: await link(p, "customer", "database") for p in PIPES}
+        await lab.clear()
+    for p in PIPES:
+        assert quiet[p]["calls_per_s"] == 0 and quiet[p]["latency_ms"] is None, quiet[p]
+        assert broken[p]["failure_rate"] >= 0.98 and broken[p]["circuit"] in (1, 2), broken[p]
+    return {"calls_per_s": expect(rates, 12, 0.06),
+            "latency_ms": expect(slow, statistics.median(times), 0.12, 10),
+            "failure_rate": {p: broken[p]["failure_rate"] for p in PIPES}}
+
+
+@check("M18", "Bank database pool: 8 connections, 7 held, all refused")
+async def m18(lab: Lab) -> dict:
+    size = await lab.watch("database", "db_pool_size", 3)
+    await lab.fault("database", "db_connection_failure", mode="exhaust", magnitude=0.875)
+    await asyncio.sleep(5)
+    used = await lab.watch("database", "db_pool_in_use", 3)
+    await lab.clear()
+    await asyncio.sleep(1)
+    await lab.fault("database", "db_connection_failure", mode="refuse")
+    await asyncio.sleep(WINDOW + 4)
+    failing = await lab.watch("database", "db_failure_rate", 4)
+    await lab.clear()
+    assert all(v >= 0.98 for v in failing.values()), failing
+    where = {(await lab.service(p, s))["deployment"] for p in PIPES for s in SERVICES}
+    assert where == {"container" if DOCKER else "process"}, where
+    return {"size": expect(size, 8, 0), "in_use": expect(used, 7, 0.0, 0.5), "failing": failing}
 
 
 # -------------------------------------------------------------- history, streaming, scale

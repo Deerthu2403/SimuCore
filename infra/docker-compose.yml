@@ -41,14 +41,15 @@ services:
       SIMUCORE_TELEMETRY_INTERVAL_S: ${SIMUCORE_TELEMETRY_INTERVAL_S:-1.0}
       SIMUCORE_RANDOM_SEED: ${SIMUCORE_RANDOM_SEED:-42}
       SIMUCORE_INCIDENT_RATE: ${SIMUCORE_INCIDENT_RATE:-0.0003}
-      SIMUCORE_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/simucore
+      SIMUCORE_TWIN_MONITORING_WS: ws://monitoring:8200/ws/metrics
+      SIMUCORE_TWIN_DATABASE_URL: postgresql://twin_writer:${TWIN_DB_PASSWORD}@postgres:5432/simucore
     volumes:
       - ../banking-sim/dependency_map.json:/config/dependency_map.json:ro
     extra_hosts: ["host.docker.internal:host-gateway"]
     ports: ["127.0.0.1:8000:8000"]
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   # One-shot: applies database/migrations and creates the service roles, then exits.
   migrate:
@@ -60,6 +61,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       MONITOR_DB_PASSWORD: ${MONITOR_DB_PASSWORD:?set it in .env}
       EXPORTER_DB_PASSWORD: ${EXPORTER_DB_PASSWORD:?set it in .env}
+      TWIN_DB_PASSWORD: ${TWIN_DB_PASSWORD:?set it in .env}
     volumes:
       - ../database/migrate.sh:/migrate.sh:ro
       - ../database/migrations:/migrations:ro

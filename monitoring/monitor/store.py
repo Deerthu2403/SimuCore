@@ -11,7 +11,7 @@ from typing import Any
 
 import asyncpg
 
-from monitor.catalog import BY_KEY
+from monitor.catalog import BY_KEY, LINK_METRICS
 from monitor.models import Collection, utcnow
 from monitor.quality import KINDS, Event
 
@@ -22,6 +22,9 @@ INSERT_SERVICE = (
     f"VALUES ({', '.join(f'${i}' for i in range(1, 6 + len(COLUMNS)))}) ON CONFLICT DO NOTHING")
 INSERT_INFRA = ("INSERT INTO infra_metric_sample (ts, component, status, metrics, origin) "
                 "VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING")
+INSERT_LINK = ("INSERT INTO link_metric_sample (ts, source, target, calls_per_s, failure_rate, "
+               "latency_ms, circuit, origin) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) "
+               "ON CONFLICT DO NOTHING")
 UPSERT_EVENT = (
     "INSERT INTO monitoring_event (id, opened_at, last_seen, closed_at, kind, severity, service, "
     "metric, message) VALUES ($1,$2,$3,$4,$5,$6::text::severity,$7,$8,$9) "
@@ -60,6 +63,9 @@ class Store:
             # down and unresponsive are history too: availability is computed from them
             values = [s.metrics.get(k) for k in COLUMNS]
             self._push(INSERT_SERVICE, (c.ts, s.node_id, None, s.status, c.origin, *values))
+        for k in c.links:
+            self._push(INSERT_LINK, (c.ts, k.source, k.target,
+                                     *(k.metrics.get(m) for m in LINK_METRICS), c.origin))
         for i in c.infra:
             self._push(INSERT_INFRA, (c.ts, i.component, i.status, json.dumps(i.metrics),
                                       c.origin))

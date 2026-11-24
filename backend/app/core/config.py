@@ -35,6 +35,13 @@ class Settings(BaseSettings):
     # Monitoring service (adapter "monitoring"; read-only)
     monitoring_url: str = "http://127.0.0.1:8200"
 
+    # Digital twin core (API v2): fed only by the monitoring service's WebSocket
+    twin_enabled: bool = True
+    twin_monitoring_ws: str = "ws://127.0.0.1:8200/ws/metrics"
+    twin_database_url: str | None = None  # without it there is no history
+    twin_stale_after_s: float = 8.0
+    twin_retention_days: int = 30
+
     # Prometheus adapter (future production integration; read-only)
     prometheus_url: str = "http://localhost:9090"
 

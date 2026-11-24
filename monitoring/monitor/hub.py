@@ -24,8 +24,9 @@ class Client:
     def filtered(self, message: dict) -> dict:
         if self.services is None or "services" not in message:
             return message
-        return {**message, "services": [s for s in message["services"]
-                                        if s["service"] in self.services]}
+        return {**message,
+                "services": [s for s in message["services"] if s["service"] in self.services],
+                "links": [k for k in message.get("links", ()) if k["source"] in self.services]}
 
 
 class Hub:

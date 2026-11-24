@@ -6,6 +6,7 @@ therefore always means that collection is broken, never that the service has bee
 
 from __future__ import annotations
 
+import os
 import re
 import time
 from collections import deque
@@ -49,6 +50,22 @@ class Telemetry:
                              "service", one, buckets=LATENCY_BUCKETS,
                              registry=r).labels(service) if uses_database else None
 
+        if service == "database":
+            self._db_failures = Counter("bank_db_query_failures", "Queries that got no connection "
+                                        "or no answer", one, registry=r).labels(service)
+        # Network connections to other services.
+        pair = ["service", "target"]
+        self._link_attempts = Counter("bank_link_attempts", "Attempts to call another service, "
+                                      "including those an open circuit refused", pair, registry=r)
+        self._link_failures = Counter("bank_link_failures", "Attempts that failed or were refused",
+                                      pair, registry=r)
+        self._link_seconds = Histogram("bank_link_seconds", "Duration of calls actually made", pair,
+                                       buckets=LATENCY_BUCKETS, registry=r)
+        self._link_circuit = Gauge("bank_link_circuit", "0 closed, 1 half open, 2 open", pair,
+                                   registry=r)
+        Gauge("bank_info", "Where the service runs", ["service", "deployment"], registry=r).labels(
+            service, "container" if os.path.exists("/.dockerenv") else "process").set(1)
+
         self._proc = psutil.Process()
         self._proc.cpu_percent()
         self._mem_cache = (0.0, 0.0)
@@ -83,6 +100,23 @@ class Telemetry:
     def traffic(self, received: int = 0, sent: int = 0) -> None:
         self._rx.inc(received)
         self._tx.inc(sent)
+
+    def declare_link(self, target: str, circuit: Callable[[], str]) -> None:
+        """Create a connection's series up front; ``circuit`` reads its breaker's state."""
+        for m in (self._link_attempts, self._link_failures, self._link_seconds):
+            m.labels(self.service, target)
+        code = {"closed": 0, "half_open": 1, "open": 2}
+        self._link_circuit.labels(self.service, target).set_function(lambda: code[circuit()])
+
+    def link(self, target: str, ok: bool, seconds: float | None) -> None:
+        self._link_attempts.labels(self.service, target).inc()
+        if not ok:
+            self._link_failures.labels(self.service, target).inc()
+        if seconds is not None:
+            self._link_seconds.labels(self.service, target).observe(seconds)
+
+    def db_failure(self) -> None:
+        self._db_failures.inc()
 
     def db_response(self, seconds: float) -> None:
         if self._db is not None:

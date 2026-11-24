@@ -14,7 +14,7 @@ import psutil
 from prometheus_client.parser import text_string_to_metric_families
 
 from monitor.config import ServiceSpec, Settings, check_host
-from monitor.models import Collection, InfraSample, Sample, utcnow
+from monitor.models import Collection, InfraSample, LinkSample, Sample, utcnow
 
 MAX_PAGE = 2 * 1024 * 1024
 SIMPLE = {"bank_process_cpu_seconds_total", "bank_memory_bytes", "bank_memory_limit_bytes",
@@ -22,7 +22,10 @@ SIMPLE = {"bank_process_cpu_seconds_total", "bank_memory_bytes", "bank_memory_li
           "bank_active_connections", "bank_request_queue_length", "bank_in_flight_requests",
           "bank_available", "bank_service_request_seconds_sum",
           "bank_service_request_seconds_count", "bank_db_response_seconds_sum",
-          "bank_db_response_seconds_count"}
+          "bank_db_response_seconds_count", "bank_db_pool_in_use", "bank_db_pool_size",
+          "bank_db_query_failures_total"}
+LINK_SERIES = {"bank_link_attempts_total", "bank_link_failures_total", "bank_link_seconds_sum",
+               "bank_link_seconds_count", "bank_link_circuit"}
 
 
 @dataclass
@@ -31,6 +34,8 @@ class Scrape:
     values: dict[str, float] = field(default_factory=dict)
     outcomes: dict[str, float] = field(default_factory=dict)
     buckets: dict[float, float] = field(default_factory=dict)  # latency, cumulative
+    links: dict[tuple[str, str], float] = field(default_factory=dict)  # (target, series)
+    deployment: str | None = None
 
 
 def parse(text: str, service: str, at: float) -> Scrape:
@@ -45,6 +50,10 @@ def parse(text: str, service: str, at: float) -> Scrape:
                 s.outcomes[x.labels["outcome"]] = x.value
             elif x.name == "bank_service_request_seconds_bucket":
                 s.buckets[float(x.labels["le"])] = x.value
+            elif x.name in LINK_SERIES:
+                s.links[(x.labels["target"], x.name)] = x.value
+            elif x.name == "bank_info" and x.labels["deployment"] in ("process", "container"):
+                s.deployment = x.labels["deployment"]
     if not s.values:
         raise ValueError("no metrics of this service on the page")
     return s
@@ -80,7 +89,8 @@ def compute(history: list[Scrape], sample: Sample) -> None:
     last, v = history[-1], history[-1].values
     gauges = {"mem_bytes": "bank_memory_bytes", "active_connections": "bank_active_connections",
               "queue_length": "bank_request_queue_length", "in_flight": "bank_in_flight_requests",
-              "availability": "bank_available"}
+              "availability": "bank_available", "db_pool_in_use": "bank_db_pool_in_use",
+              "db_pool_size": "bank_db_pool_size"}
     for key, name in gauges.items():
         if name in v:
             sample.put(key, v[name])
@@ -112,10 +122,35 @@ def compute(history: list[Scrape], sample: Sample) -> None:
         total, count = grow(f"{name}_sum"), grow(f"{name}_count")
         if total is not None and count is not None:
             sample.put(key, total / count * 1000 if count else None)
+    failed, queries = grow("bank_db_query_failures_total"), grow("bank_db_response_seconds_count")
+    if failed is not None and queries is not None:
+        sample.put("db_failure_rate", min(1.0, failed / queries) if queries else None)
     if last.buckets:
         grown = {b: increase([h.buckets.get(b, 0.0) for h in history]) for b in last.buckets}
         q = quantile(0.95, grown)
         sample.put("latency_ms", None if math.isnan(q) else q * 1000)
+
+
+def compute_link(history: list[Scrape], link: LinkSample) -> None:
+    last, seconds = history[-1].links, history[-1].at - history[0].at
+
+    def grow(name: str) -> float | None:
+        key = (link.target, name)
+        if key not in last:
+            return None
+        return increase([h.links[key] for h in history if key in h.links])
+
+    if (link.target, "bank_link_circuit") in last:
+        link.put("circuit", last[(link.target, "bank_link_circuit")])
+    if len(history) < 2 or seconds <= 0:
+        return
+    attempts, failures = grow("bank_link_attempts_total"), grow("bank_link_failures_total")
+    if attempts is not None and failures is not None:
+        link.put("calls_per_s", attempts / seconds)
+        link.put("failure_rate", min(1.0, failures / attempts) if attempts else None)
+    total, count = grow("bank_link_seconds_sum"), grow("bank_link_seconds_count")
+    if total is not None and count is not None:
+        link.put("latency_ms", total / count * 1000 if count else None)
 
 
 class DirectSource:
@@ -135,7 +170,15 @@ class DirectSource:
     async def collect(self, with_infra: bool) -> Collection:
         ts = utcnow()
         samples = await asyncio.gather(*(self._one(s, ts) for s in self.services))
-        return Collection(ts, "measured", list(samples), [self._host(ts)] if with_infra else [])
+        links = []
+        for s, sample in zip(self.services, samples, strict=True):
+            if sample.status == "up":
+                for target in s.targets:
+                    link = LinkSample(s.name, target, ts)
+                    compute_link(list(self.history[s.name]), link)
+                    links.append(link)
+        return Collection(ts, "measured", list(samples), [self._host(ts)] if with_infra else [],
+                          links)
 
     async def _one(self, s: ServiceSpec, ts) -> Sample:
         sample, history = Sample(s.name, s.node_id, ts, "up"), self.history[s.name]
@@ -158,6 +201,7 @@ class DirectSource:
         while len(history) > 2 and history[-1].at - history[1].at >= self.window_s:
             history.popleft()
         compute(list(history), sample)
+        sample.deployment = history[-1].deployment
         if sample.metrics.get("availability") == 0:
             sample.status, sample.reason = "down", "service reports itself unavailable"
         return sample

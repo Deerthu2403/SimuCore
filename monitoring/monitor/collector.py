@@ -7,6 +7,7 @@ import logging
 import time
 from datetime import datetime
 from typing import Any
+from uuid import uuid4
 
 from monitor.config import ServiceSpec, Settings
 from monitor.hub import Hub
@@ -33,6 +34,7 @@ class Collector:
         self.store, self.hub = store, hub
         self.book = EventBook()
         self.started_at = utcnow()
+        self.run_id = uuid4().hex[:12]  # changes when the monitor restarts
         self.sequence = 0
         self.ticks = self.failed_ticks = 0
         self.last_error: str | None = None
@@ -147,10 +149,14 @@ class Collector:
     def service_view(self, s: Sample) -> dict[str, Any]:
         return {"service": s.service, "node_id": s.node_id, "status": s.status,
                 "reason": s.reason or None, "ts": s.ts.isoformat(), "metrics": s.metrics,
-                "invalid": s.invalid}
+                "invalid": s.invalid, "deployment": s.deployment}
 
     def services_view(self) -> list[dict]:
         return [self.service_view(s) for s in self.current.samples] if self.current else []
+
+    def links_view(self) -> list[dict]:
+        return [{"source": k.source, "target": k.target, "ts": k.ts.isoformat(),
+                 "metrics": k.metrics} for k in self.current.links] if self.current else []
 
     def infra_view(self) -> list[dict]:
         return [{"component": i.component, "status": i.status, "reason": i.reason or None,
@@ -193,9 +199,11 @@ class Collector:
     def message(self, kind: str, changed: list[Event] | None = None) -> dict[str, Any]:
         """One WebSocket message: the complete current picture plus the events that changed."""
         return {"type": kind, "sequence": self.sequence, "sent_at": utcnow().isoformat(),
+                "collected_at": self.current.ts.isoformat() if self.current else None,
+                "run_id": self.run_id,
                 "fresh": self.fresh, "origin": self.current.origin if self.current else None,
                 "overview": self.overview(), "services": self.services_view(),
-                "infrastructure": self.infra_view(),
+                "links": self.links_view(), "infrastructure": self.infra_view(),
                 "events": [e.to_dict() for e in (changed if changed is not None
                                                  else self.book.open.values())],
                 "open_events": len(self.book.open)}

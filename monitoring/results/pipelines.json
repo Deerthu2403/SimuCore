@@ -1,14 +1,14 @@
 {
-  "run_at": "2026-11-24T06:38:41+00:00",
+  "run_at": "2026-11-24T16:34:51+00:00",
   "bank": "local processes",
-  "passed": 29,
-  "total": 29,
+  "passed": 31,
+  "total": 31,
   "results": [
     {
       "code": "M01",
       "title": "Every required metric of every service arrives through both pipelines",
       "passed": true,
-      "seconds": 16.8,
+      "seconds": 16.6,
       "facts": {
         "prometheus": {
           "services": 8,
@@ -25,17 +25,17 @@
       "code": "M02",
       "title": "Requests per second: exact request rate",
       "passed": true,
-      "seconds": 22.7,
+      "seconds": 22.8,
       "facts": {
         "customer": {
           "truth": 20,
           "prometheus": 20.0,
-          "direct": 19.962
+          "direct": 19.9631
         },
         "database": {
           "truth": 20,
-          "prometheus": 20.0,
-          "direct": 19.9895
+          "prometheus": 19.8889,
+          "direct": 19.984
         }
       },
       "error": null
@@ -44,17 +44,17 @@
       "code": "M03",
       "title": "Request latency: compared with the client's own stopwatch",
       "passed": true,
-      "seconds": 22.7,
+      "seconds": 22.8,
       "facts": {
         "mean_ms": {
-          "truth": 138.789,
-          "prometheus": 132.6544,
-          "direct": 133.2449
+          "truth": 139.891,
+          "prometheus": 134.4255,
+          "direct": 133.6941
         },
         "p95_ms": {
-          "truth": 176.887,
-          "prometheus": 191.0526,
-          "direct": 191.7727
+          "truth": 177.565,
+          "prometheus": 191.5625,
+          "direct": 191.4773
         }
       },
       "error": null
@@ -75,17 +75,17 @@
       "code": "M05",
       "title": "CPU: compared with the operating system's counter",
       "passed": true,
-      "seconds": 43.8,
+      "seconds": 44.1,
       "facts": {
         "light": {
-          "truth": 23.37,
+          "truth": 23.322,
           "prometheus": 23.7847,
-          "direct": 23.6549
+          "direct": 23.8524
         },
         "heavy": {
-          "truth": 96.721,
-          "prometheus": 97.4826,
-          "direct": 97.707
+          "truth": 97.268,
+          "prometheus": 97.8842,
+          "direct": 97.7864
         }
       },
       "error": null
@@ -97,18 +97,18 @@
       "seconds": 18.0,
       "facts": {
         "normal_bytes": {
-          "truth": 48631808,
-          "prometheus": 48631808.0,
-          "direct": 48631808.0
+          "truth": 47976448,
+          "prometheus": 47976448.0,
+          "direct": 47976448.0
         },
         "full_bytes": {
-          "truth": 263897088,
-          "prometheus": 263897088.0,
-          "direct": 263897088.0
+          "truth": 264290304,
+          "prometheus": 264290304.0,
+          "direct": 264290304.0
         },
         "full_pct": {
-          "prometheus": 98.3093,
-          "direct": 98.3093
+          "prometheus": 98.4558,
+          "direct": 98.4558
         }
       },
       "error": null
@@ -122,12 +122,12 @@
         "received": {
           "truth": 21012,
           "prometheus": 21012.0,
-          "direct": 20986.8414
+          "direct": 20980.0153
         },
         "sent": {
           "truth": 3468,
           "prometheus": 3468.0,
-          "direct": 3467.8589
+          "direct": 3465.398
         }
       },
       "error": null
@@ -139,18 +139,18 @@
       "seconds": 45.0,
       "facts": {
         "slow_network_caller": {
-          "truth": 107.882,
-          "prometheus": 108.7638,
-          "direct": 108.7813
+          "truth": 108.633,
+          "prometheus": 109.1826,
+          "direct": 109.0515
         },
         "database_itself": {
-          "prometheus": 1.1767,
-          "direct": 1.0761
+          "prometheus": 0.3398,
+          "direct": 0.3411
         },
         "pool_exhausted": {
           "truth": 750,
-          "prometheus": 757.5207,
-          "direct": 757.7684
+          "prometheus": 755.1377,
+          "direct": 755.08
         }
       },
       "error": null
@@ -159,10 +159,10 @@
       "code": "M09",
       "title": "Active connections: 25 real sockets are opened and closed",
       "passed": true,
-      "seconds": 17.8,
+      "seconds": 17.9,
       "facts": {
         "before": {
-          "prometheus": 2.5,
+          "prometheus": 2.0,
           "direct": 3.0
         },
         "with_25_more": {
@@ -180,7 +180,7 @@
       "code": "M10",
       "title": "Request queue length: 12 requests are kept waiting",
       "passed": true,
-      "seconds": 19.8,
+      "seconds": 20.3,
       "facts": {
         "truth": 12,
         "prometheus": 12.0,
@@ -192,12 +192,12 @@
       "code": "M11",
       "title": "Service availability: crash, soft downtime, hang and recovery",
       "passed": true,
-      "seconds": 20.3,
+      "seconds": 20.6,
       "facts": {
-        "crash_seen_after_s": 2.9,
-        "recovery_seen_after_s": 1.3,
-        "downtime_seen_after_s": 2.1,
-        "hang_seen_after_s": 2.9
+        "crash_seen_after_s": 1.7,
+        "recovery_seen_after_s": 0.9,
+        "downtime_seen_after_s": 1.7,
+        "hang_seen_after_s": 3.0
       },
       "error": null
     },
@@ -215,16 +215,16 @@
       "code": "M13",
       "title": "Infrastructure level: PostgreSQL, the Docker machine and Prometheus",
       "passed": true,
-      "seconds": 4.5,
+      "seconds": 6.9,
       "facts": {
         "postgres_connections": {
-          "measured": 10.0,
-          "truth": 9,
-          "tracked_after_s": 3.7
+          "measured": 11.0,
+          "truth": 10,
+          "tracked_after_s": 5.8
         },
         "host_memory_pct": {
-          "truth": 12.8,
-          "measured": 12.7355
+          "truth": 12.4,
+          "measured": 12.5741
         },
         "scrape_targets": 13.0
       },
@@ -234,10 +234,56 @@
       "code": "M14",
       "title": "Both pipelines agree with each other on every metric under a mixed workload",
       "passed": true,
-      "seconds": 42.1,
+      "seconds": 43.3,
       "facts": {
-        "metrics_compared": 111,
+        "metrics_compared": 114,
         "disagreements": 0
+      },
+      "error": null
+    },
+    {
+      "code": "M17",
+      "title": "Network connections: exact call rate, stopwatch latency, failures, open circuit",
+      "passed": true,
+      "seconds": 68.0,
+      "facts": {
+        "calls_per_s": {
+          "truth": 12,
+          "prometheus": 12.0,
+          "direct": 12.0488
+        },
+        "latency_ms": {
+          "truth": 169.786,
+          "prometheus": 167.2758,
+          "direct": 167.2025
+        },
+        "failure_rate": {
+          "prometheus": 1.0,
+          "direct": 1.0
+        }
+      },
+      "error": null
+    },
+    {
+      "code": "M18",
+      "title": "Bank database pool: 8 connections, 7 held, all refused",
+      "passed": true,
+      "seconds": 33.0,
+      "facts": {
+        "size": {
+          "truth": 8,
+          "prometheus": 8.0,
+          "direct": 8.0
+        },
+        "in_use": {
+          "truth": 7,
+          "prometheus": 7.0,
+          "direct": 7.0
+        },
+        "failing": {
+          "prometheus": 1.0,
+          "direct": 1.0
+        }
       },
       "error": null
     },
@@ -245,12 +291,12 @@
       "code": "M15",
       "title": "History: every tick is stored, without gaps, and equals what was streamed",
       "passed": true,
-      "seconds": 35.1,
+      "seconds": 34.5,
       "facts": {
         "ticks": 15,
         "rows": 120,
-        "values_compared": 1665,
-        "longest_interval_s": 2.01
+        "values_compared": 1710,
+        "longest_interval_s": 2.04
       },
       "error": null
     },
@@ -258,11 +304,11 @@
       "code": "M16",
       "title": "WebSocket: 60 clients at once, one of them not reading; updates never stop",
       "passed": true,
-      "seconds": 15.9,
+      "seconds": 16.0,
       "facts": {
         "clients": 60,
-        "longest_pause_s": 2.03,
-        "tick_ms": 32.3
+        "longest_pause_s": 2.07,
+        "tick_ms": 124.3
       },
       "error": null
     },
@@ -270,10 +316,10 @@
       "code": "F01",
       "title": "Missing metrics: exactly the lost ones are reported, then cleared",
       "passed": true,
-      "seconds": 20.1,
+      "seconds": 20.4,
       "facts": {
-        "reported_after_s": 16.2,
-        "cleared_after_s": 3.8
+        "reported_after_s": 16.0,
+        "cleared_after_s": 4.2
       },
       "error": null
     },
@@ -281,9 +327,9 @@
       "code": "F02",
       "title": "Impossible values are reported and never stored",
       "passed": true,
-      "seconds": 14.0,
+      "seconds": 13.8,
       "facts": {
-        "reported_after_s": 4.2,
+        "reported_after_s": 3.8,
         "bad_values_stored": 0
       },
       "error": null
@@ -295,8 +341,8 @@
       "seconds": 16.0,
       "facts": {
         "reported_after_s": {
-          "garbage": 4.2,
-          "slow": 4.2
+          "garbage": 3.8,
+          "slow": 5.1
         }
       },
       "error": null
@@ -305,12 +351,12 @@
       "code": "F04",
       "title": "Prometheus stopped or frozen: one alarm, no false service alarms, stale data marked",
       "passed": true,
-      "seconds": 26.0,
+      "seconds": 25.9,
       "facts": {
-        "stopped_reported_after_s": 4.2,
-        "stopped_recovered_after_s": 8.3,
-        "frozen_reported_after_s": 5.4,
-        "frozen_recovered_after_s": 2.5
+        "stopped_reported_after_s": 3.8,
+        "stopped_recovered_after_s": 10.5,
+        "frozen_reported_after_s": 5.1,
+        "frozen_recovered_after_s": 0.8
       },
       "error": null
     },
@@ -318,12 +364,12 @@
       "code": "F05",
       "title": "Database stopped for 25 s: monitoring continues and no row is lost",
       "passed": true,
-      "seconds": 46.3,
+      "seconds": 46.1,
       "facts": {
-        "reported_after_s": 8.3,
-        "rows_buffered": 137,
+        "reported_after_s": 8.4,
+        "rows_buffered": 347,
         "rows_lost": 0,
-        "longest_gap_s": 2.01
+        "longest_gap_s": 2.07
       },
       "error": null
     },
@@ -331,12 +377,12 @@
       "code": "F06",
       "title": "Monitoring service killed: history survives and its absence is visible",
       "passed": true,
-      "seconds": 14.9,
+      "seconds": 17.9,
       "facts": {
         "state_6s_after_kill": "exited 0",
-        "prometheus_noticed_after_s": 6.0,
+        "prometheus_noticed_after_s": 8.1,
         "history_kept": true,
-        "gap_s": 9.3
+        "gap_s": 12.6
       },
       "error": null
     },
@@ -344,10 +390,10 @@
       "code": "F07",
       "title": "All services crash together and come back",
       "passed": true,
-      "seconds": 73.3,
+      "seconds": 82.2,
       "facts": {
         "all_reported_after_s": 0.0,
-        "all_clear_after_s": 3.3
+        "all_clear_after_s": 3.8
       },
       "error": null
     },
@@ -355,11 +401,11 @@
       "code": "F08",
       "title": "Digital twin: monitoring output drives node states; loss of it means unknown",
       "passed": true,
-      "seconds": 27.8,
+      "seconds": 32.2,
       "facts": {
-        "crash_in_twin_after_s": 1.7,
+        "crash_in_twin_after_s": 2.1,
         "monitor_lost_unknown_after_s": 4.2,
-        "live_again_after_s": 1.7
+        "live_again_after_s": 2.5
       },
       "error": null
     },
@@ -377,7 +423,7 @@
       "code": "F10",
       "title": "Partitions: late ones are repaired, old ones removed, recent ones protected",
       "passed": true,
-      "seconds": 0.3,
+      "seconds": 0.6,
       "facts": {
         "late_rows_moved": 1,
         "old_partitions_dropped": 1
@@ -388,7 +434,7 @@
       "code": "F11",
       "title": "Migration: repeatable, and upgrades a Phase 1 database without losing data",
       "passed": true,
-      "seconds": 8.7,
+      "seconds": 11.5,
       "facts": {
         "old_rows_kept": 500
       },
@@ -398,7 +444,7 @@
       "code": "F12",
       "title": "Synthetic data: clearly labelled, repeatable, never mixed into measured history",
       "passed": true,
-      "seconds": 7.1,
+      "seconds": 13.8,
       "facts": {
         "synthetic_rows": 8640,
         "added_by_second_run": 0,
@@ -415,10 +461,10 @@
         "ticks": 153,
         "failed_ticks": 0,
         "stored_ticks": 153,
-        "longest_gap_s": 2.04,
-        "oldest_data_s": 1.99,
+        "longest_gap_s": 2.07,
+        "oldest_data_s": 2.0,
         "alarms": [],
-        "memory": "45.85MiB / 7.664GiB -> 46.95MiB / 7.664GiB"
+        "memory": "46.48MiB / 7.664GiB -> 47.54MiB / 7.664GiB"
       },
       "error": null
     }

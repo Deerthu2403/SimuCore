@@ -52,6 +52,10 @@ class ConnectionPool:
         started = time.perf_counter()
         try:
             return await self._run(fn, *args)
+        except BankError as exc:
+            if exc.status >= 500:  # not "not found" and the like: those are answers
+                self.ctx.telemetry.db_failure()
+            raise
         finally:
             self.ctx.telemetry.db_response(time.perf_counter() - started)
 

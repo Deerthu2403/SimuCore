@@ -68,6 +68,9 @@ class ServiceClient:
         self.calls: Counter[str] = Counter()
         self.failed: Counter[str] = Counter()
         self.breakers = {t: CircuitBreaker() for t in self.edges}
+        if telemetry:
+            for t, b in self.breakers.items():
+                telemetry.declare_link(t, lambda b=b: b.state)
         self._clients = {
             t: httpx.AsyncClient(
                 base_url=service_url(t),
@@ -87,6 +90,8 @@ class ServiceClient:
             raise UndeclaredDependency(f"{self.service} -> {target} is not in dependency_map.json")
         breaker = self.breakers[target]
         if not breaker.allow():
+            if self.telemetry:
+                self.telemetry.link(target, ok=False, seconds=None)
             raise DependencyUnavailable(self.service, target, "circuit open", breaker.last_path)
         self.calls[target] += 1
         started = time.perf_counter()
@@ -95,8 +100,9 @@ class ServiceClient:
         except BaseException:
             breaker.abandon()
             raise
-        self._measure(target, resp, time.perf_counter() - started)
-        if resp is not None and resp.status_code < 500:
+        ok = resp is not None and resp.status_code < 500
+        self._measure(target, resp, time.perf_counter() - started, ok)
+        if resp is not None and ok:
             breaker.success()
             return resp
         nested = [target]
@@ -125,9 +131,11 @@ class ServiceClient:
                 reason = f"connection lost ({type(exc).__name__})"
         return None, reason
 
-    def _measure(self, target: str, resp: httpx.Response | None, seconds: float) -> None:
+    def _measure(self, target: str, resp: httpx.Response | None, seconds: float,
+                 ok: bool) -> None:
         if self.telemetry is None:
             return
+        self.telemetry.link(target, ok, seconds)
         if target == "database":  # timeouts and refusals count: that is the response time felt
             self.telemetry.db_response(seconds)
         if resp is not None:

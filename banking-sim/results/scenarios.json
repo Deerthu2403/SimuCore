@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-24T06:48:36+00:00",
+  "run_at": "2026-11-24T15:56:56+00:00",
   "platform": "Windows-11-10.0.26300-SP0",
   "python": "3.13.7",
   "mode": "local processes",
@@ -10,7 +10,7 @@
       "code": "S01",
       "title": "Health checks: all eight services live and ready",
       "passed": true,
-      "seconds": 1.0,
+      "seconds": 0.9,
       "facts": {
         "ready": 8
       },
@@ -28,7 +28,7 @@
           "rejected": 0,
           "failed": 0
         },
-        "p95_ms": 77.7
+        "p95_ms": 77.0
       },
       "error": null
     },
@@ -44,7 +44,7 @@
           "rejected": 0,
           "failed": 0
         },
-        "p95_ms": 120.2
+        "p95_ms": 111.9
       },
       "error": null
     },
@@ -52,20 +52,20 @@
       "code": "S04",
       "title": "Overload beyond capacity is shed, money stays correct, service recovers",
       "passed": true,
-      "seconds": 27.7,
+      "seconds": 27.5,
       "facts": {
         "offered_peak_rps": 120,
         "requests": 1153,
         "outcomes": {
-          "ok": 851,
+          "ok": 854,
           "rejected": 0,
-          "failed": 302
+          "failed": 299
         },
-        "p95_ms": 4201.0,
-        "overloaded": 182,
+        "p95_ms": 4069.3,
+        "overloaded": 186,
         "after": {
-          "transactions_completed": 397,
-          "transactions_failed": 59,
+          "transactions_completed": 395,
+          "transactions_failed": 63,
           "transactions_processing": 0,
           "open_holds": 0,
           "payments_authorized_not_settled": 0
@@ -126,7 +126,7 @@
       "code": "S08",
       "title": "Payment Gateway stopped: payments fail with funds released, transfers work",
       "passed": true,
-      "seconds": 15.4,
+      "seconds": 16.1,
       "facts": {
         "failure_path": [
           "transaction",
@@ -139,7 +139,7 @@
       "code": "S09",
       "title": "Notification Service down: payments still complete",
       "passed": true,
-      "seconds": 27.1,
+      "seconds": 26.4,
       "facts": {
         "receipt": "unavailable",
         "payment": "completed"
@@ -173,10 +173,10 @@
       "code": "S11",
       "title": "Moderate database latency slows everything but nothing fails",
       "passed": true,
-      "seconds": 18.9,
+      "seconds": 19.0,
       "facts": {
-        "baseline_p50_ms": 13.1,
-        "slow_p50_ms": 175.7,
+        "baseline_p50_ms": 13.0,
+        "slow_p50_ms": 175.1,
         "failed": 0
       },
       "error": null
@@ -185,10 +185,10 @@
       "code": "S12",
       "title": "Severe database latency becomes timeouts, then open circuits that fail fast",
       "passed": true,
-      "seconds": 14.3,
+      "seconds": 13.6,
       "facts": {
-        "first_ms": 1009,
-        "last_ms": 5,
+        "first_ms": 1030,
+        "last_ms": 6,
         "circuit": "open"
       },
       "error": null
@@ -197,25 +197,25 @@
       "code": "S13",
       "title": "CPU exhaustion in Transaction Processing: moderate slows it, severe cripples it",
       "passed": true,
-      "seconds": 47.4,
+      "seconds": 75.2,
       "facts": {
         "baseline": {
-          "median_ms": 55,
+          "median_ms": 57,
           "ok": 30,
           "refused_503": 0,
-          "cpu_pct": 52.1
+          "cpu_pct": 43.8
         },
         "moderate": {
-          "median_ms": 153,
+          "median_ms": 123,
           "ok": 30,
           "refused_503": 0,
-          "cpu_pct": 85.3
+          "cpu_pct": 80.1
         },
         "severe": {
-          "median_ms": 6070,
+          "median_ms": 8685,
           "ok": 0,
           "refused_503": 8,
-          "cpu_pct": 99.8
+          "cpu_pct": 99.7
         }
       },
       "error": null
@@ -226,8 +226,8 @@
       "passed": true,
       "seconds": 1.7,
       "facts": {
-        "mem_pct": 98.22,
-        "mem_after": 18.06
+        "mem_pct": 98.47,
+        "mem_after": 17.92
       },
       "error": null
     },
@@ -255,7 +255,7 @@
       "code": "S17",
       "title": "Database connection pool exhausted: queries time out waiting",
       "passed": true,
-      "seconds": 8.0,
+      "seconds": 2.2,
       "facts": {
         "message": "database: DB_POOL_EXHAUSTED"
       },
@@ -265,7 +265,7 @@
       "code": "S18",
       "title": "Every service can be stopped, started and restarted alone",
       "passed": true,
-      "seconds": 92.7,
+      "seconds": 93.5,
       "facts": {
         "stop_modes": {
           "database": "graceful",
@@ -285,7 +285,7 @@
       "code": "S19",
       "title": "Services start in reverse order, before their dependencies exist",
       "passed": true,
-      "seconds": 41.3,
+      "seconds": 44.3,
       "facts": {
         "order": [
           "transaction",
@@ -304,7 +304,7 @@
       "code": "S20",
       "title": "Balances survive a database crash and restart",
       "passed": true,
-      "seconds": 3.8,
+      "seconds": 4.5,
       "facts": {
         "balances_identical": true
       },
@@ -314,19 +314,19 @@
       "code": "S21",
       "title": "Transaction Processing killed mid-load: no money lost or created",
       "passed": true,
-      "seconds": 24.1,
+      "seconds": 24.5,
       "facts": {
-        "acknowledged": 80,
+        "acknowledged": 66,
         "acknowledged_but_missing": 0,
         "committed_without_acknowledgement": 0,
         "outcomes": {
-          "ok": 80,
+          "ok": 66,
           "rejected": 0,
-          "failed": 50
+          "failed": 64
         },
         "after": {
-          "transactions_completed": 666,
-          "transactions_failed": 182,
+          "transactions_completed": 651,
+          "transactions_failed": 171,
           "transactions_processing": 0,
           "open_holds": 0,
           "payments_authorized_not_settled": 0
@@ -338,19 +338,19 @@
       "code": "S22",
       "title": "Database killed mid-load: no money lost or created",
       "passed": true,
-      "seconds": 26.1,
+      "seconds": 26.6,
       "facts": {
-        "acknowledged": 83,
+        "acknowledged": 84,
         "acknowledged_but_missing": 0,
         "committed_without_acknowledgement": 0,
         "outcomes": {
-          "ok": 83,
+          "ok": 84,
           "rejected": 0,
-          "failed": 63
+          "failed": 62
         },
         "after": {
-          "transactions_completed": 753,
-          "transactions_failed": 182,
+          "transactions_completed": 739,
+          "transactions_failed": 172,
           "transactions_processing": 0,
           "open_holds": 0,
           "payments_authorized_not_settled": 0
@@ -362,7 +362,7 @@
       "code": "S23",
       "title": "Observed service calls match the declared dependency map exactly",
       "passed": true,
-      "seconds": 9.7,
+      "seconds": 10.2,
       "facts": {
         "observed": 14,
         "declared": 14

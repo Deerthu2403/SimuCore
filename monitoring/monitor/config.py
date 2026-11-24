@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     services_file: Path = ROOT / "banking-sim" / "dependency_map.json"
     database_url: str | None = None  # without it there is live data but no history
     retention_days: int = Field(default=30, ge=7)
-    buffer_rows: int = 50_000
+    buffer_rows: int = 120_000
     seed: int = 42
     ws_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173",
                              "http://localhost:8080", "http://127.0.0.1:8080"]
@@ -41,6 +41,7 @@ class ServiceSpec:
     port: int
     uses_database: bool
     baseline_latency_ms: float
+    targets: tuple[str, ...] = ()  # services it is declared to call
 
 
 @lru_cache
@@ -49,7 +50,8 @@ def load_services(path: Path) -> tuple[ServiceSpec, ...]:
     uses_db = {d["source"] for d in raw["dependencies"] if d["target"] == "database"}
     return tuple(
         ServiceSpec(name, s["title"], s["node_id"], s["port"],
-                    name == "database" or name in uses_db, float(s["baseline_latency_ms"]))
+                    name == "database" or name in uses_db, float(s["baseline_latency_ms"]),
+                    tuple(d["target"] for d in raw["dependencies"] if d["source"] == name))
         for name, s in raw["services"].items())
 
 

@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Literal
 
-from monitor.catalog import BY_KEY
+from monitor.catalog import BY_KEY, LINK_METRICS
 
 Status = Literal["up", "down", "unresponsive"]
 Origin = Literal["measured", "synthetic"]
@@ -36,15 +36,38 @@ class Sample:
     metrics: dict[str, float | None] = field(default_factory=dict)
     invalid: dict[str, str] = field(default_factory=dict)  # metric -> what was wrong with it
     reason: str = ""
+    deployment: str | None = None  # "process" or "container"
 
     def put(self, key: str, value: float | None) -> None:
         """Store a value, or reject it as impossible."""
-        if value is None:
-            self.metrics[key] = None
-        elif not math.isfinite(value) or not -1e-9 <= value <= BY_KEY[key].maximum:
-            self.invalid[key] = repr(value)
-        else:
-            self.metrics[key] = max(0.0, round(value, 4))
+        _put(self, key, value, BY_KEY[key].maximum)
+
+
+@dataclass
+class LinkSample:
+    """One network connection between two services, as its caller measured it."""
+
+    source: str
+    target: str
+    ts: datetime
+    metrics: dict[str, float | None] = field(default_factory=dict)
+    invalid: dict[str, str] = field(default_factory=dict)
+
+    @property
+    def id(self) -> str:
+        return f"{self.source}->{self.target}"
+
+    def put(self, key: str, value: float | None) -> None:
+        _put(self, key, value, LINK_METRICS[key])
+
+
+def _put(sample: Sample | LinkSample, key: str, value: float | None, maximum: float) -> None:
+    if value is None:
+        sample.metrics[key] = None
+    elif not math.isfinite(value) or not -1e-9 <= value <= maximum:
+        sample.invalid[key] = repr(value)
+    else:
+        sample.metrics[key] = max(0.0, round(value, 4))
 
 
 @dataclass
@@ -62,4 +85,5 @@ class Collection:
     origin: Origin
     samples: list[Sample]
     infra: list[InfraSample] = field(default_factory=list)
+    links: list[LinkSample] = field(default_factory=list)
     clock_skew_s: float = 0.0

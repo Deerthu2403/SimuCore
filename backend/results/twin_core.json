@@ -1,0 +1,330 @@
+{
+  "run_at": "2026-11-24T10:08:58+00:00",
+  "bank": "local processes",
+  "passed": 22,
+  "total": 22,
+  "results": [
+    {
+      "code": "D01",
+      "title": "The complete infrastructure is represented, and every part is known",
+      "passed": true,
+      "seconds": 0.0,
+      "facts": {
+        "components": 15,
+        "by_type": {
+          "microservice": 8,
+          "database": 2,
+          "server": 2,
+          "network": 1,
+          "monitoring": 2
+        },
+        "links": 35,
+        "bank_runs_on": "server-bank-host"
+      },
+      "error": null
+    },
+    {
+      "code": "D02",
+      "title": "Twin metrics equal the monitoring data they came from, value by value",
+      "passed": true,
+      "seconds": 27.1,
+      "facts": {
+        "moments": 8,
+        "values_compared": 1319,
+        "differences": 0
+      },
+      "error": null
+    },
+    {
+      "code": "D03",
+      "title": "Network connections: calls, latency and failures match what was really sent",
+      "passed": true,
+      "seconds": 33.4,
+      "facts": {
+        "calls_per_s": {
+          "truth": 15,
+          "twin": 15.0
+        },
+        "normal_ms": 5.1688,
+        "with_200ms_delay": 209.8718
+      },
+      "error": null
+    },
+    {
+      "code": "D04",
+      "title": "Healthy stays healthy: no status change in 60 s of normal traffic",
+      "passed": true,
+      "seconds": 97.9,
+      "facts": {
+        "seconds": 60,
+        "status_changes": 0
+      },
+      "error": null
+    },
+    {
+      "code": "D05",
+      "title": "Failed and recovering: every service is killed and restarted once",
+      "passed": true,
+      "seconds": 153.9,
+      "facts": {
+        "slowest_failed_s": 2.9,
+        "slowest_recovering_s": 2.5,
+        "recovery_phase_s": [
+          7.9,
+          8.3
+        ]
+      },
+      "error": null
+    },
+    {
+      "code": "D06",
+      "title": "Failed: soft downtime, and most requests failing",
+      "passed": true,
+      "seconds": 15.9,
+      "facts": {
+        "downtime_s": 1.7,
+        "errors_s": 3.8,
+        "root_cause": [
+          "store-bank"
+        ]
+      },
+      "error": null
+    },
+    {
+      "code": "D07",
+      "title": "Warning: slower than normal because of something else, not overloaded",
+      "passed": true,
+      "seconds": 44.0,
+      "facts": {
+        "seen_after_s": 3.7,
+        "reason": "p95 latency is 198 ms, normal is up to 25 ms",
+        "healthy_again_s": 13.8
+      },
+      "error": null
+    },
+    {
+      "code": "D08",
+      "title": "Overloaded: CPU, memory, and requests piling up",
+      "passed": true,
+      "seconds": 34.9,
+      "facts": {
+        "cpu_s": 11.6,
+        "memory_s": 3.8,
+        "queue_s": 4.2
+      },
+      "error": null
+    },
+    {
+      "code": "D09",
+      "title": "Unknown: a hung service is neither failed nor healthy",
+      "passed": true,
+      "seconds": 33.1,
+      "facts": {
+        "unknown_after_s": 2.9,
+        "path": [
+          "unknown",
+          "healthy"
+        ]
+      },
+      "error": null
+    },
+    {
+      "code": "D10",
+      "title": "Bank database: its failure and exhaustion are distinct from the service in front",
+      "passed": true,
+      "seconds": 36.5,
+      "facts": {
+        "refused_s": 3.7,
+        "pool_7_of_8_s": 4.1,
+        "store_while_service_is_down": "unknown"
+      },
+      "error": null
+    },
+    {
+      "code": "D11",
+      "title": "Dependencies: one crash under load, one root cause, network not blamed",
+      "passed": true,
+      "seconds": 59.6,
+      "facts": {
+        "affected": {
+          "bank-authentication": "warning",
+          "bank-customer": "failed",
+          "bank-account": "failed",
+          "bank-transaction": "failed",
+          "bank-payment": "warning",
+          "bank-fraud": "failed"
+        },
+        "root_cause": "bank-database",
+        "failed_connections": 4,
+        "network": "healthy"
+      },
+      "error": null
+    },
+    {
+      "code": "D12",
+      "title": "Connections fail and recover with their target; the circuit breaker is visible",
+      "passed": true,
+      "seconds": 49.8,
+      "facts": {
+        "failed_after_s": 7.9,
+        "circuit": 1.0,
+        "path": [
+          "warning",
+          "failed",
+          "recovering",
+          "healthy"
+        ],
+        "healthy_again_s": 18.7
+      },
+      "error": null
+    },
+    {
+      "code": "D13",
+      "title": "Chaos: random faults against a known truth; the twin must agree every time",
+      "passed": true,
+      "seconds": 206.2,
+      "facts": {
+        "actions": {
+          "downtime": 3,
+          "repair": 9,
+          "hang": 5,
+          "crash": 5
+        },
+        "comparisons": 176,
+        "mismatches": 0
+      },
+      "error": null
+    },
+    {
+      "code": "D14",
+      "title": "WebSocket: 40 clients rebuild the twin from updates alone, during faults",
+      "passed": true,
+      "seconds": 50.7,
+      "facts": {
+        "clients": 40,
+        "updates_each": 25,
+        "lost": 0,
+        "median_update_kb": 23.8
+      },
+      "error": null
+    },
+    {
+      "code": "D15",
+      "title": "Update delay: from measurement to twin",
+      "passed": true,
+      "seconds": 30.6,
+      "facts": {
+        "median_s": 0.001,
+        "worst_s": 0.044,
+        "observations_in_30_s": 15
+      },
+      "error": null
+    },
+    {
+      "code": "D16",
+      "title": "Monitoring stopped: everything becomes unknown; afterwards nothing is made up",
+      "passed": true,
+      "seconds": 32.4,
+      "facts": {
+        "unknown_after_s": 6.2,
+        "live_again_s": 7.9,
+        "payment": [
+          "unknown",
+          "recovering",
+          "healthy"
+        ]
+      },
+      "error": null
+    },
+    {
+      "code": "D17",
+      "title": "Prometheus stopped: monitoring is alive but blind, and the twin knows",
+      "passed": true,
+      "seconds": 25.2,
+      "facts": {
+        "unknown_after_s": 13.9
+      },
+      "error": null
+    },
+    {
+      "code": "D18",
+      "title": "History: past states are reconstructed exactly, with their metrics",
+      "passed": true,
+      "seconds": 65.8,
+      "facts": {
+        "moments_reconstructed": 3,
+        "timeline": [
+          "healthy",
+          "failed",
+          "recovering",
+          "healthy"
+        ],
+        "seconds": [
+          1.7,
+          14.0,
+          8.0,
+          28.0
+        ]
+      },
+      "error": null
+    },
+    {
+      "code": "D19",
+      "title": "Database stopped for 25 s: the twin continues and no history is lost",
+      "passed": true,
+      "seconds": 40.0,
+      "facts": {
+        "noticed_without_database_s": 1.7,
+        "recorded_afterwards": [
+          "failed",
+          "recovering",
+          "healthy"
+        ],
+        "lost": 0
+      },
+      "error": null
+    },
+    {
+      "code": "D20",
+      "title": "Twin restarted: it comes back by itself, and its absence is visible in history",
+      "passed": true,
+      "seconds": 104.4,
+      "facts": {
+        "synchronised_after_restart_s": 1.3,
+        "timeline": [
+          "recovering",
+          "healthy",
+          "untracked",
+          "failed",
+          "recovering",
+          "healthy"
+        ],
+        "total_s": 16.6
+      },
+      "error": null
+    },
+    {
+      "code": "D21",
+      "title": "Separation: the twin holds no key, changes nothing, and never calls the bank",
+      "passed": true,
+      "seconds": 34.6,
+      "facts": {
+        "write_requests_refused": 16,
+        "requests_sent_to_bank": 0,
+        "database_writes_refused": 9
+      },
+      "error": null
+    },
+    {
+      "code": "D22",
+      "title": "The twin sees the bank; the bank does not notice the twin",
+      "passed": true,
+      "seconds": 18.2,
+      "facts": {
+        "bank_requests_while_twin_was_dead": 66,
+        "failed": 0
+      },
+      "error": null
+    }
+  ]
+}

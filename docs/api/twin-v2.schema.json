@@ -1,0 +1,1361 @@
+{
+  "TwinView": {
+    "$defs": {
+      "ComponentDisplay": {
+        "properties": {
+          "layer": {
+            "description": "Suggested horizontal plane, see catalogue.layers",
+            "title": "Layer",
+            "type": "string"
+          },
+          "group": {
+            "description": "Components that belong together: bank or platform",
+            "title": "Group",
+            "type": "string"
+          },
+          "order": {
+            "description": "Stable position within the layer",
+            "title": "Order",
+            "type": "integer"
+          },
+          "size": {
+            "description": "Importance",
+            "maximum": 5,
+            "minimum": 1,
+            "title": "Size",
+            "type": "integer"
+          },
+          "load": {
+            "anyOf": [
+              {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "How busy; null if unknown",
+            "title": "Load"
+          },
+          "attention": {
+            "description": "Should draw the eye",
+            "title": "Attention",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "layer",
+          "group",
+          "order",
+          "size",
+          "attention"
+        ],
+        "title": "ComponentDisplay",
+        "type": "object"
+      },
+      "ComponentType": {
+        "enum": [
+          "microservice",
+          "database",
+          "server",
+          "network",
+          "monitoring"
+        ],
+        "title": "ComponentType",
+        "type": "string"
+      },
+      "ComponentView": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/$defs/ComponentType"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "criticality": {
+            "maximum": 5,
+            "minimum": 1,
+            "title": "Criticality",
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/$defs/Status"
+          },
+          "status_since": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Since"
+          },
+          "previous_status": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Status"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "description": "Why it is in this status; empty when healthy",
+            "title": "Reason",
+            "type": "string"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/$defs/FindingView"
+            },
+            "title": "Findings",
+            "type": "array"
+          },
+          "root_causes": {
+            "description": "Failed components that explain the trouble",
+            "items": {
+              "type": "string"
+            },
+            "title": "Root Causes",
+            "type": "array"
+          },
+          "metrics": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Metrics",
+            "type": "object"
+          },
+          "data_quality": {
+            "enum": [
+              "complete",
+              "partial",
+              "derived",
+              "none"
+            ],
+            "title": "Data Quality",
+            "type": "string"
+          },
+          "attributes": {
+            "additionalProperties": true,
+            "title": "Attributes",
+            "type": "object"
+          },
+          "dependencies": {
+            "$ref": "#/$defs/Dependencies"
+          },
+          "display": {
+            "$ref": "#/$defs/ComponentDisplay"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "name",
+          "description",
+          "criticality",
+          "status",
+          "status_since",
+          "previous_status",
+          "reason",
+          "findings",
+          "root_causes",
+          "metrics",
+          "data_quality",
+          "attributes",
+          "dependencies",
+          "display"
+        ],
+        "title": "ComponentView",
+        "type": "object"
+      },
+      "Dependencies": {
+        "properties": {
+          "depends_on": {
+            "items": {
+              "$ref": "#/$defs/DependencyRef"
+            },
+            "title": "Depends On",
+            "type": "array"
+          },
+          "dependents": {
+            "items": {
+              "$ref": "#/$defs/DependencyRef"
+            },
+            "title": "Dependents",
+            "type": "array"
+          }
+        },
+        "required": [
+          "depends_on",
+          "dependents"
+        ],
+        "title": "Dependencies",
+        "type": "object"
+      },
+      "DependencyRef": {
+        "properties": {
+          "id": {
+            "description": "The other component",
+            "title": "Id",
+            "type": "string"
+          },
+          "link_id": {
+            "title": "Link Id",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/$defs/LinkKind"
+          },
+          "mode": {
+            "description": "required, degradable, best_effort or structural",
+            "title": "Mode",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/$defs/Status",
+            "description": "Status of the other component"
+          },
+          "link_status": {
+            "$ref": "#/$defs/Status"
+          }
+        },
+        "required": [
+          "id",
+          "link_id",
+          "kind",
+          "mode",
+          "status",
+          "link_status"
+        ],
+        "title": "DependencyRef",
+        "type": "object"
+      },
+      "FindingView": {
+        "properties": {
+          "level": {
+            "enum": [
+              "warning",
+              "overload",
+              "failure"
+            ],
+            "title": "Level",
+            "type": "string"
+          },
+          "rule": {
+            "title": "Rule",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "metric": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Metric"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Value"
+          },
+          "threshold": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Threshold"
+          }
+        },
+        "required": [
+          "level",
+          "rule",
+          "message"
+        ],
+        "title": "FindingView",
+        "type": "object"
+      },
+      "LinkDisplay": {
+        "properties": {
+          "flow": {
+            "description": "Traffic on a logarithmic scale; 0 = none",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Flow",
+            "type": "number"
+          },
+          "attention": {
+            "title": "Attention",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "flow",
+          "attention"
+        ],
+        "title": "LinkDisplay",
+        "type": "object"
+      },
+      "LinkKind": {
+        "enum": [
+          "calls",
+          "stores_in",
+          "hosted_on",
+          "connected_to",
+          "monitors"
+        ],
+        "title": "LinkKind",
+        "type": "string"
+      },
+      "LinkView": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "source": {
+            "description": "The component that depends",
+            "title": "Source",
+            "type": "string"
+          },
+          "target": {
+            "description": "The component depended on",
+            "title": "Target",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/$defs/LinkKind"
+          },
+          "mode": {
+            "title": "Mode",
+            "type": "string"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "number"
+          },
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/$defs/Status"
+          },
+          "status_since": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Since"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "active": {
+            "description": "Traffic was seen in the last seconds",
+            "title": "Active",
+            "type": "boolean"
+          },
+          "metrics": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Metrics",
+            "type": "object"
+          },
+          "data_quality": {
+            "enum": [
+              "complete",
+              "partial",
+              "derived",
+              "none"
+            ],
+            "title": "Data Quality",
+            "type": "string"
+          },
+          "display": {
+            "$ref": "#/$defs/LinkDisplay"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "target",
+          "kind",
+          "mode",
+          "weight",
+          "purpose",
+          "status",
+          "status_since",
+          "reason",
+          "active",
+          "metrics",
+          "data_quality",
+          "display"
+        ],
+        "title": "LinkView",
+        "type": "object"
+      },
+      "Status": {
+        "enum": [
+          "healthy",
+          "warning",
+          "overloaded",
+          "failed",
+          "recovering",
+          "unknown"
+        ],
+        "title": "Status",
+        "type": "string"
+      },
+      "Summary": {
+        "properties": {
+          "overall": {
+            "$ref": "#/$defs/Status",
+            "description": "Worst status among the bank's components"
+          },
+          "components": {
+            "title": "Components",
+            "type": "integer"
+          },
+          "by_status": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "propertyNames": {
+              "$ref": "#/$defs/Status"
+            },
+            "title": "By Status",
+            "type": "object"
+          },
+          "by_type": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "propertyNames": {
+              "$ref": "#/$defs/ComponentType"
+            },
+            "title": "By Type",
+            "type": "object"
+          },
+          "links": {
+            "title": "Links",
+            "type": "integer"
+          },
+          "links_failed": {
+            "title": "Links Failed",
+            "type": "integer"
+          },
+          "needs_attention": {
+            "description": "Ids, most serious first",
+            "items": {
+              "type": "string"
+            },
+            "title": "Needs Attention",
+            "type": "array"
+          }
+        },
+        "required": [
+          "overall",
+          "components",
+          "by_status",
+          "by_type",
+          "links",
+          "links_failed",
+          "needs_attention"
+        ],
+        "title": "Summary",
+        "type": "object"
+      },
+      "TwinMeta": {
+        "properties": {
+          "api_version": {
+            "default": "2.0",
+            "title": "Api Version",
+            "type": "string"
+          },
+          "twin_id": {
+            "default": "simucore-bank",
+            "title": "Twin Id",
+            "type": "string"
+          },
+          "run_id": {
+            "description": "Changes when the twin process restarts",
+            "title": "Run Id",
+            "type": "string"
+          },
+          "version": {
+            "description": "Grows with every change",
+            "title": "Version",
+            "type": "integer"
+          },
+          "structure_version": {
+            "description": "Grows when components or links are added/removed",
+            "title": "Structure Version",
+            "type": "integer"
+          },
+          "sync": {
+            "enum": [
+              "live",
+              "stale",
+              "waiting"
+            ],
+            "title": "Sync",
+            "type": "string"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "enum": [
+                  "measured",
+                  "synthetic"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin"
+          },
+          "last_observation_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the values shown were measured",
+            "title": "Last Observation At"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id",
+          "version",
+          "structure_version",
+          "sync",
+          "origin",
+          "last_observation_at",
+          "generated_at"
+        ],
+        "title": "TwinMeta",
+        "type": "object"
+      }
+    },
+    "properties": {
+      "meta": {
+        "$ref": "#/$defs/TwinMeta"
+      },
+      "summary": {
+        "$ref": "#/$defs/Summary"
+      },
+      "components": {
+        "items": {
+          "$ref": "#/$defs/ComponentView"
+        },
+        "title": "Components",
+        "type": "array"
+      },
+      "links": {
+        "items": {
+          "$ref": "#/$defs/LinkView"
+        },
+        "title": "Links",
+        "type": "array"
+      }
+    },
+    "required": [
+      "meta",
+      "summary",
+      "components",
+      "links"
+    ],
+    "title": "TwinView",
+    "type": "object"
+  },
+  "TwinMessage": {
+    "$defs": {
+      "ComponentDisplay": {
+        "properties": {
+          "layer": {
+            "description": "Suggested horizontal plane, see catalogue.layers",
+            "title": "Layer",
+            "type": "string"
+          },
+          "group": {
+            "description": "Components that belong together: bank or platform",
+            "title": "Group",
+            "type": "string"
+          },
+          "order": {
+            "description": "Stable position within the layer",
+            "title": "Order",
+            "type": "integer"
+          },
+          "size": {
+            "description": "Importance",
+            "maximum": 5,
+            "minimum": 1,
+            "title": "Size",
+            "type": "integer"
+          },
+          "load": {
+            "anyOf": [
+              {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "How busy; null if unknown",
+            "title": "Load"
+          },
+          "attention": {
+            "description": "Should draw the eye",
+            "title": "Attention",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "layer",
+          "group",
+          "order",
+          "size",
+          "attention"
+        ],
+        "title": "ComponentDisplay",
+        "type": "object"
+      },
+      "ComponentType": {
+        "enum": [
+          "microservice",
+          "database",
+          "server",
+          "network",
+          "monitoring"
+        ],
+        "title": "ComponentType",
+        "type": "string"
+      },
+      "ComponentView": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/$defs/ComponentType"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "criticality": {
+            "maximum": 5,
+            "minimum": 1,
+            "title": "Criticality",
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/$defs/Status"
+          },
+          "status_since": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Since"
+          },
+          "previous_status": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Status"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "description": "Why it is in this status; empty when healthy",
+            "title": "Reason",
+            "type": "string"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/$defs/FindingView"
+            },
+            "title": "Findings",
+            "type": "array"
+          },
+          "root_causes": {
+            "description": "Failed components that explain the trouble",
+            "items": {
+              "type": "string"
+            },
+            "title": "Root Causes",
+            "type": "array"
+          },
+          "metrics": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Metrics",
+            "type": "object"
+          },
+          "data_quality": {
+            "enum": [
+              "complete",
+              "partial",
+              "derived",
+              "none"
+            ],
+            "title": "Data Quality",
+            "type": "string"
+          },
+          "attributes": {
+            "additionalProperties": true,
+            "title": "Attributes",
+            "type": "object"
+          },
+          "dependencies": {
+            "$ref": "#/$defs/Dependencies"
+          },
+          "display": {
+            "$ref": "#/$defs/ComponentDisplay"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "name",
+          "description",
+          "criticality",
+          "status",
+          "status_since",
+          "previous_status",
+          "reason",
+          "findings",
+          "root_causes",
+          "metrics",
+          "data_quality",
+          "attributes",
+          "dependencies",
+          "display"
+        ],
+        "title": "ComponentView",
+        "type": "object"
+      },
+      "Dependencies": {
+        "properties": {
+          "depends_on": {
+            "items": {
+              "$ref": "#/$defs/DependencyRef"
+            },
+            "title": "Depends On",
+            "type": "array"
+          },
+          "dependents": {
+            "items": {
+              "$ref": "#/$defs/DependencyRef"
+            },
+            "title": "Dependents",
+            "type": "array"
+          }
+        },
+        "required": [
+          "depends_on",
+          "dependents"
+        ],
+        "title": "Dependencies",
+        "type": "object"
+      },
+      "DependencyRef": {
+        "properties": {
+          "id": {
+            "description": "The other component",
+            "title": "Id",
+            "type": "string"
+          },
+          "link_id": {
+            "title": "Link Id",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/$defs/LinkKind"
+          },
+          "mode": {
+            "description": "required, degradable, best_effort or structural",
+            "title": "Mode",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/$defs/Status",
+            "description": "Status of the other component"
+          },
+          "link_status": {
+            "$ref": "#/$defs/Status"
+          }
+        },
+        "required": [
+          "id",
+          "link_id",
+          "kind",
+          "mode",
+          "status",
+          "link_status"
+        ],
+        "title": "DependencyRef",
+        "type": "object"
+      },
+      "FindingView": {
+        "properties": {
+          "level": {
+            "enum": [
+              "warning",
+              "overload",
+              "failure"
+            ],
+            "title": "Level",
+            "type": "string"
+          },
+          "rule": {
+            "title": "Rule",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "metric": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Metric"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Value"
+          },
+          "threshold": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Threshold"
+          }
+        },
+        "required": [
+          "level",
+          "rule",
+          "message"
+        ],
+        "title": "FindingView",
+        "type": "object"
+      },
+      "LinkDisplay": {
+        "properties": {
+          "flow": {
+            "description": "Traffic on a logarithmic scale; 0 = none",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Flow",
+            "type": "number"
+          },
+          "attention": {
+            "title": "Attention",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "flow",
+          "attention"
+        ],
+        "title": "LinkDisplay",
+        "type": "object"
+      },
+      "LinkKind": {
+        "enum": [
+          "calls",
+          "stores_in",
+          "hosted_on",
+          "connected_to",
+          "monitors"
+        ],
+        "title": "LinkKind",
+        "type": "string"
+      },
+      "LinkView": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "source": {
+            "description": "The component that depends",
+            "title": "Source",
+            "type": "string"
+          },
+          "target": {
+            "description": "The component depended on",
+            "title": "Target",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/$defs/LinkKind"
+          },
+          "mode": {
+            "title": "Mode",
+            "type": "string"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "number"
+          },
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/$defs/Status"
+          },
+          "status_since": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Since"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "active": {
+            "description": "Traffic was seen in the last seconds",
+            "title": "Active",
+            "type": "boolean"
+          },
+          "metrics": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Metrics",
+            "type": "object"
+          },
+          "data_quality": {
+            "enum": [
+              "complete",
+              "partial",
+              "derived",
+              "none"
+            ],
+            "title": "Data Quality",
+            "type": "string"
+          },
+          "display": {
+            "$ref": "#/$defs/LinkDisplay"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "target",
+          "kind",
+          "mode",
+          "weight",
+          "purpose",
+          "status",
+          "status_since",
+          "reason",
+          "active",
+          "metrics",
+          "data_quality",
+          "display"
+        ],
+        "title": "LinkView",
+        "type": "object"
+      },
+      "Status": {
+        "enum": [
+          "healthy",
+          "warning",
+          "overloaded",
+          "failed",
+          "recovering",
+          "unknown"
+        ],
+        "title": "Status",
+        "type": "string"
+      },
+      "Summary": {
+        "properties": {
+          "overall": {
+            "$ref": "#/$defs/Status",
+            "description": "Worst status among the bank's components"
+          },
+          "components": {
+            "title": "Components",
+            "type": "integer"
+          },
+          "by_status": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "propertyNames": {
+              "$ref": "#/$defs/Status"
+            },
+            "title": "By Status",
+            "type": "object"
+          },
+          "by_type": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "propertyNames": {
+              "$ref": "#/$defs/ComponentType"
+            },
+            "title": "By Type",
+            "type": "object"
+          },
+          "links": {
+            "title": "Links",
+            "type": "integer"
+          },
+          "links_failed": {
+            "title": "Links Failed",
+            "type": "integer"
+          },
+          "needs_attention": {
+            "description": "Ids, most serious first",
+            "items": {
+              "type": "string"
+            },
+            "title": "Needs Attention",
+            "type": "array"
+          }
+        },
+        "required": [
+          "overall",
+          "components",
+          "by_status",
+          "by_type",
+          "links",
+          "links_failed",
+          "needs_attention"
+        ],
+        "title": "Summary",
+        "type": "object"
+      },
+      "TransitionView": {
+        "properties": {
+          "ts": {
+            "format": "date-time",
+            "title": "Ts",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          },
+          "object_kind": {
+            "enum": [
+              "component",
+              "link"
+            ],
+            "title": "Object Kind",
+            "type": "string"
+          },
+          "object_id": {
+            "title": "Object Id",
+            "type": "string"
+          },
+          "from_status": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Status"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "to_status": {
+            "$ref": "#/$defs/Status"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "root_causes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Root Causes",
+            "type": "array"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin"
+          }
+        },
+        "required": [
+          "ts",
+          "version",
+          "object_kind",
+          "object_id",
+          "from_status",
+          "to_status",
+          "reason",
+          "root_causes",
+          "origin"
+        ],
+        "title": "TransitionView",
+        "type": "object"
+      },
+      "TwinMeta": {
+        "properties": {
+          "api_version": {
+            "default": "2.0",
+            "title": "Api Version",
+            "type": "string"
+          },
+          "twin_id": {
+            "default": "simucore-bank",
+            "title": "Twin Id",
+            "type": "string"
+          },
+          "run_id": {
+            "description": "Changes when the twin process restarts",
+            "title": "Run Id",
+            "type": "string"
+          },
+          "version": {
+            "description": "Grows with every change",
+            "title": "Version",
+            "type": "integer"
+          },
+          "structure_version": {
+            "description": "Grows when components or links are added/removed",
+            "title": "Structure Version",
+            "type": "integer"
+          },
+          "sync": {
+            "enum": [
+              "live",
+              "stale",
+              "waiting"
+            ],
+            "title": "Sync",
+            "type": "string"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "enum": [
+                  "measured",
+                  "synthetic"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin"
+          },
+          "last_observation_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the values shown were measured",
+            "title": "Last Observation At"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id",
+          "version",
+          "structure_version",
+          "sync",
+          "origin",
+          "last_observation_at",
+          "generated_at"
+        ],
+        "title": "TwinMeta",
+        "type": "object"
+      }
+    },
+    "description": "Every WebSocket message. ``snapshot`` is complete; ``delta`` holds whole changed objects, to\nbe applied on top of ``base_version``; ``heartbeat`` says that nothing changed.",
+    "properties": {
+      "type": {
+        "enum": [
+          "snapshot",
+          "delta",
+          "heartbeat"
+        ],
+        "title": "Type",
+        "type": "string"
+      },
+      "base_version": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Base Version"
+      },
+      "meta": {
+        "$ref": "#/$defs/TwinMeta"
+      },
+      "summary": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Summary"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "components": {
+        "default": [],
+        "items": {
+          "$ref": "#/$defs/ComponentView"
+        },
+        "title": "Components",
+        "type": "array"
+      },
+      "links": {
+        "default": [],
+        "items": {
+          "$ref": "#/$defs/LinkView"
+        },
+        "title": "Links",
+        "type": "array"
+      },
+      "transitions": {
+        "default": [],
+        "items": {
+          "$ref": "#/$defs/TransitionView"
+        },
+        "title": "Transitions",
+        "type": "array"
+      }
+    },
+    "required": [
+      "type",
+      "meta"
+    ],
+    "title": "TwinMessage",
+    "type": "object"
+  }
+}

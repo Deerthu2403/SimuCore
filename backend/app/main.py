@@ -18,11 +18,18 @@ from app.adapters import (
     SimulatedAdapter,
     TelemetryAdapter,
 )
+from app.api import v2
 from app.api.v1 import api_router
 from app.api.v1.ws import router as ws_router
 from app.core.config import Settings, get_settings
 from app.core.events import EventBus
 from app.core.logging import configure_logging
+from app.digital_twin import blueprint
+from app.digital_twin.feed import MonitoringFeed
+from app.digital_twin.history import TwinHistory
+from app.digital_twin.hub import TwinHub
+from app.digital_twin.state import DigitalTwin
+from app.digital_twin.sync import TwinSync
 from app.simulation.bank_topology import build_reference_topology
 from app.simulation.infrastructure import SimulatedBankInfrastructure
 from app.twin.state import TwinState
@@ -44,6 +51,15 @@ def build_adapter(
     raise ValueError(f"Adapter {settings.telemetry_adapter!r} is not available")
 
 
+def build_digital_twin(settings: Settings) -> TwinSync:
+    """The twin core gets a file, a one-way message feed and its own database role. Nothing else."""
+    twin = DigitalTwin(blueprint.load_map(settings.bank_map_path),
+                       stale_after_s=settings.twin_stale_after_s)
+    history = TwinHistory(settings.twin_database_url, settings.twin_retention_days) \
+        if settings.twin_database_url else None
+    return TwinSync(twin, MonitoringFeed(settings.twin_monitoring_ws), TwinHub(), history)
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
     configure_logging(settings.log_level)
@@ -57,10 +73,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                                 settings.stale_after_intervals)
         app.state.bus, app.state.twin_state, app.state.sync = bus, state, sync
         app.state.simulated_infra = infra
+        twin_sync = build_digital_twin(settings) if settings.twin_enabled else None
+        if twin_sync:
+            app.state.twin_sync, app.state.twin_hub = twin_sync, twin_sync.hub
+            app.state.digital_twin = twin_sync.twin
         await sync.start()
+        if twin_sync:
+            await twin_sync.start()
         try:
             yield
         finally:
+            if twin_sync:
+                await twin_sync.stop()
             await sync.stop()
 
     app = FastAPI(title="SimuCore API", version=__version__, lifespan=lifespan,
@@ -69,6 +93,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                        allow_methods=["*"], allow_headers=["*"])
     app.include_router(api_router, prefix=settings.api_prefix)
     app.include_router(ws_router)
+    app.include_router(v2.router)
+    app.include_router(v2.ws_router)
+    app.state.settings = settings
     app.mount("/metrics", make_asgi_app())
     return app
 

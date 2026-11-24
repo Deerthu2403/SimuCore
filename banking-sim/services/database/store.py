@@ -50,6 +50,10 @@ CREATE INDEX IF NOT EXISTS txn_velocity ON transactions(customer_id, created);
 CREATE TABLE IF NOT EXISTS payments (
   txn_id TEXT PRIMARY KEY, customer_id TEXT NOT NULL, beneficiary TEXT NOT NULL,
   amount INTEGER NOT NULL, status TEXT NOT NULL, created REAL NOT NULL);
+-- The reconciler looks for the few open rows among all the finished ones.
+CREATE INDEX IF NOT EXISTS txn_open ON transactions(created) WHERE status='processing';
+CREATE INDEX IF NOT EXISTS payments_open ON payments(created) WHERE status='authorized';
+CREATE INDEX IF NOT EXISTS ledger_txn ON ledger(txn_id);
 """
 
 
@@ -263,13 +267,15 @@ def reconcile(conn, ttl_s: float) -> dict:
         note = json.dumps({"reason": "reconciled"})
         done = conn.execute(
             "UPDATE transactions SET status='completed', detail=? WHERE status='processing' "
-            "AND created<? AND id IN (SELECT txn_id FROM holds WHERE status='captured')",
+            "AND created<? AND EXISTS (SELECT 1 FROM holds h WHERE h.txn_id=transactions.id AND "
+            "h.status='captured')",
             (note, cutoff)).rowcount
         # Only transactions that can no longer move money: no hold, or a released one. A live
         # hold may be captured at any moment, so its transaction waits until the hold expires.
         orphans = [r["id"] for r in conn.execute(
             "SELECT id FROM transactions WHERE status='processing' AND created<? "
-            "AND id NOT IN (SELECT txn_id FROM holds WHERE status<>'released')", (cutoff,))]
+            "AND NOT EXISTS (SELECT 1 FROM holds h WHERE h.txn_id=transactions.id "
+            "AND h.status<>'released')", (cutoff,))]
         for txn_id in orphans:
             # Same tombstone as release_hold: nothing may take funds for it from now on.
             conn.execute("INSERT OR IGNORE INTO holds VALUES (?,'',0,'released',?)",
@@ -279,10 +285,12 @@ def reconcile(conn, ttl_s: float) -> dict:
         # Payments whose capture or void never reached the gateway follow the ledger.
         settled = conn.execute(
             "UPDATE payments SET status='captured' WHERE status='authorized' AND created<? "
-            "AND txn_id IN (SELECT txn_id FROM holds WHERE status='captured')", (cutoff,)).rowcount
+            "AND EXISTS (SELECT 1 FROM holds h WHERE h.txn_id=payments.txn_id AND "
+            "h.status='captured')", (cutoff,)).rowcount
         voided = conn.execute(
             "UPDATE payments SET status='voided' WHERE status='authorized' AND created<? "
-            "AND txn_id IN (SELECT txn_id FROM holds WHERE status='released')", (cutoff,)).rowcount
+            "AND EXISTS (SELECT 1 FROM holds h WHERE h.txn_id=payments.txn_id AND "
+            "h.status='released')", (cutoff,)).rowcount
     return {"released": len(stale), "completed": done, "failed": len(orphans),
             "payments_settled": settled, "payments_voided": voided}
 

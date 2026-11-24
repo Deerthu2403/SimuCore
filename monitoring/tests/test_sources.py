@@ -7,12 +7,25 @@ import httpx
 import pytest
 import yaml
 
-from monitor.catalog import METRICS
+from monitor.catalog import LINK_METRICS, METRICS
 from monitor.config import ROOT, Settings, check_host, load_services
-from monitor.models import Sample, SourceUnavailable
+from monitor.models import LinkSample, Sample, SourceUnavailable
 from monitor.quality import inspect
-from monitor.sources.direct import DirectSource, Scrape, compute, increase, parse, quantile
-from monitor.sources.prometheus import INFRA_QUERIES, SERVICE_QUERIES, PrometheusSource
+from monitor.sources.direct import (
+    DirectSource,
+    Scrape,
+    compute,
+    compute_link,
+    increase,
+    parse,
+    quantile,
+)
+from monitor.sources.prometheus import (
+    INFRA_QUERIES,
+    LINK_QUERIES,
+    SERVICE_QUERIES,
+    PrometheusSource,
+)
 from monitor.sources.synthetic import SyntheticSource
 
 SERVICES = load_services(Settings().services_file)
@@ -32,7 +45,7 @@ def test_every_queried_bank_series_is_really_exported():
     source = "".join(p.read_text(encoding="utf-8")
                      for p in (ROOT / "banking-sim").rglob("*.py") if ".venv" not in p.parts)
     exported = set(re.findall(r'"(bank_[a-z_]+)"', source))
-    for q in SERVICE_QUERIES.values():
+    for q in (*SERVICE_QUERIES.values(), *LINK_QUERIES.values()):
         for name in re.findall(r"bank_[a-z_]+", q):
             base = re.sub(r"_(total|bucket|sum|count)$", "", name)
             assert name in exported or base in exported, name
@@ -40,6 +53,7 @@ def test_every_queried_bank_series_is_really_exported():
 
 def test_every_metric_has_a_query():
     assert set(SERVICE_QUERIES) == {m.key for m in METRICS}
+    assert set(LINK_QUERIES) == set(LINK_METRICS)
 
 
 @pytest.mark.parametrize("url", ["https://api.realbank.com", "http://10.0.0.1:9090",
@@ -110,7 +124,41 @@ def test_rates_are_computed_from_two_scrapes():
     assert m["latency_mean_ms"] == 10 and m["db_response_ms"] == 5
     assert m["latency_ms"] == pytest.approx(19)
     assert m["mem_pct"] == 50 and m["active_connections"] == 4
-    assert set(m) == {x.key for x in METRICS}
+    assert set(m) == {x.key for x in METRICS if not x.only}
+
+
+def link_page(attempts=0.0, failures=0.0, seconds=0.0, count=0.0, circuit=0) -> str:
+    s = 'service="account",target="database"'
+    return page() + "\n".join([
+        f"bank_link_attempts_total{{{s}}} {attempts}",
+        f"bank_link_failures_total{{{s}}} {failures}",
+        f"bank_link_seconds_sum{{{s}}} {seconds}", f"bank_link_seconds_count{{{s}}} {count}",
+        f"bank_link_circuit{{{s}}} {circuit}",
+        'bank_info{service="account",deployment="container"} 1', ""])
+
+
+def link_of(a: str, b: str) -> LinkSample:
+    link = LinkSample("account", "database", datetime.now(UTC))
+    compute_link([parse(a, "account", 0.0), parse(b, "account", 10.0)], link)
+    return link
+
+
+def test_connection_metrics_are_computed():
+    link = link_of(link_page(), link_page(attempts=100, failures=25, seconds=0.4, count=80,
+                                          circuit=2))
+    # 20 of the 100 attempts were refused by the open circuit, so only 80 were timed
+    assert link.metrics == {"calls_per_s": 10, "failure_rate": 0.25, "latency_ms": 5, "circuit": 2}
+
+
+def test_idle_connection_has_no_latency_but_is_not_missing():
+    link = link_of(link_page(attempts=5), link_page(attempts=5))
+    assert link.metrics == {"calls_per_s": 0, "failure_rate": None, "latency_ms": None,
+                            "circuit": 0}
+
+
+def test_deployment_is_recognised():
+    assert parse(link_page(), "account", 0).deployment == "container"
+    assert parse(page(), "account", 0).deployment is None
 
 
 def test_idle_service_has_no_latency_but_nothing_is_missing():
@@ -119,7 +167,8 @@ def test_idle_service_has_no_latency_but_nothing_is_missing():
     for key in ("latency_ms", "latency_mean_ms", "error_rate", "db_response_ms"):
         assert s.metrics[key] is None
     assert s.metrics["rps"] == 0
-    other = [x for x in inspect_one(s) if x.service == "account"]
+    other = [x for x in inspect_one(s) if x.service == "account"
+             and not x.metric.startswith("link:")]
     assert other == []
 
 
@@ -211,6 +260,7 @@ class FakePrometheus:
         self.fail = None
         self.skew = 0.0
         self.queries = {q.format(w="10s"): k for k, q in SERVICE_QUERIES.items()}
+        self.link_queries = {q.format(w="10s"): k for k, q in LINK_QUERIES.items()}
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
         assert request.method == "GET"
@@ -229,6 +279,13 @@ class FakePrometheus:
             return self.vector(self.up)
         if q.startswith("time() - timestamp"):
             return self.vector(self.age)
+        if q == "bank_info":
+            return self.ok([{"metric": {"service": s, "deployment": "process"},
+                             "value": [0, "1"]} for s in self.up])
+        if q in self.link_queries:
+            value = "NaN" if self.link_queries[q] == "failure_rate" else "1"
+            return self.ok([{"metric": {"service": s.name, "target": t}, "value": [0, value]}
+                            for s in SERVICES for t in s.targets])
         if q in self.queries:
             key = self.queries[q]
             values = {s: 1.0 for s in self.up}
@@ -259,6 +316,16 @@ async def test_prometheus_delivers_every_metric_of_every_service():
     assert all(set(s.metrics) == {m.key for m in METRICS} for s in by.values())
     assert {i.component for i in c.infra} == set(INFRA_QUERIES)
     assert inspect(c, SERVICES) == []
+    assert len(c.links) == 14 and {s.deployment for s in by.values()} == {"process"}
+    assert all(k.metrics["failure_rate"] is None and k.metrics["calls_per_s"] == 1
+               for k in c.links)
+
+
+async def test_connections_of_a_service_that_is_not_up_are_unknown():
+    f = FakePrometheus()
+    f.up["account"], f.errors["account"] = 0, "connection refused"
+    c, _ = await prom(f)
+    assert "account" not in {k.source for k in c.links} and len(c.links) == 12
 
 
 @pytest.mark.parametrize(("error", "status"), [

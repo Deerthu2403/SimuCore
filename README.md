@@ -38,7 +38,8 @@ SimuCore/
 │   │   ├── domain/           models, inter-module contracts, topology graph
 │   │   ├── adapters/         read-only telemetry adapters (simulated, prometheus)
 │   │   ├── simulation/       reference bank topology, synthetic telemetry, SimPy what-if
-│   │   ├── twin/             twin state + synchroniser
+│   │   ├── digital_twin/     twin core (API v2): model, health, sync, history
+│   │   ├── twin/             Phase 1 twin state + synchroniser (API v1)
 │   │   ├── propagation/      failure propagation engine
 │   │   ├── ml/               anomaly detection & failure prediction   (P3)
 │   │   ├── optimization/     NSGA-II optimiser                         (P5)
@@ -69,6 +70,7 @@ SimuCore/
 7. [Development roadmap](docs/07-roadmap.md)
 8. [Simulated banking microservices](docs/08-banking-microservices.md)
 9. [Monitoring and data collection](docs/09-monitoring.md)
+10. [Digital twin core](docs/10-digital-twin-core.md)
 
 ## Getting started (local, Windows PowerShell)
 
@@ -115,7 +117,7 @@ simulation. Docker Compose for the backend still uses the built-in simulation.
 Copy-Item .env.example .env
 ```
 
-Fill in the five empty passwords in `.env` (the file says how), then:
+Fill in the six empty passwords in `.env` (the file says how), then:
 
 ```powershell
 docker compose --env-file .env -f infra/docker-compose.yml up -d --build
