@@ -17,6 +17,7 @@ x-service: &service
 
 x-env: &env
   BANK_INTERNAL_KEY: ${BANK_INTERNAL_KEY:?set BANK_INTERNAL_KEY in banking-sim/.env}
+  BANK_HOLD_TTL_S: ${BANK_HOLD_TTL_S:-60}
   BANK_URL_AUTHENTICATION: http://bank-authentication:8101
   BANK_URL_CUSTOMER: http://bank-customer:8102
   BANK_URL_ACCOUNT: http://bank-account:8103

@@ -29,6 +29,7 @@ from bankcommon.errors import BankError
 MAX_DURATION_S = 600
 MAX_LATENCY_MS = 10_000
 MAX_CPU_THREADS = 4
+CPU_SLICE_S = 0.1
 
 
 class FaultRequest(BaseModel):
@@ -126,12 +127,14 @@ class FaultEngine:
         def spin() -> None:
             x = 0
             while not stop.is_set() and time.monotonic() < fault.expires_at:
-                began = time.perf_counter()
-                for i in range(10_000):
-                    x = (x * 31 + i) & 0xFFFFFFFF
-                busy = time.perf_counter() - began
+                # Long slices: Windows cannot sleep for less than about 15 ms, so short ones
+                # would make the real duty cycle much lower there than on Linux.
+                until = time.perf_counter() + CPU_SLICE_S * duty
+                while time.perf_counter() < until:
+                    for i in range(5_000):
+                        x = (x * 31 + i) & 0xFFFFFFFF
                 if duty < 1:
-                    stop.wait(busy * (1 - duty) / duty)
+                    stop.wait(CPU_SLICE_S * (1 - duty))
 
         for _ in range(max(1, round(MAX_CPU_THREADS * duty))):
             threading.Thread(target=spin, daemon=True, name="fault-cpu").start()

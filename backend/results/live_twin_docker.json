@@ -1,0 +1,227 @@
+{
+  "run_at": "2026-11-23T10:31:20+00:00",
+  "passed": 9,
+  "total": 9,
+  "results": [
+    {
+      "code": "T1",
+      "title": "Twin shows the eight services and fourteen dependencies",
+      "passed": true,
+      "seconds": 0.0,
+      "facts": {
+        "nodes": 8,
+        "edges": 14,
+        "source": "bank_services"
+      },
+      "error": null
+    },
+    {
+      "code": "T2",
+      "title": "Normal traffic raises (almost) no false alarms",
+      "passed": true,
+      "seconds": 79.1,
+      "facts": {
+        "node_ticks": 480,
+        "false_alarms": 1,
+        "by_node": {
+          "authentication": 1
+        }
+      },
+      "error": null
+    },
+    {
+      "code": "T3",
+      "title": "Killing each service marks exactly that node down, then it recovers",
+      "passed": true,
+      "seconds": 34.9,
+      "facts": {
+        "seconds_to_down_including_the_kill_command": {
+          "authentication": 1.87,
+          "customer": 1.53,
+          "account": 1.53,
+          "transaction": 2.63,
+          "payment": 2.6,
+          "fraud": 2.59,
+          "notification": 1.53,
+          "database": 1.54
+        },
+        "slowest_down": 2.63,
+        "slowest_recovery": 0.63
+      },
+      "error": null
+    },
+    {
+      "code": "T4",
+      "title": "A crash is visible within 3 seconds (5 tries)",
+      "passed": true,
+      "seconds": 19.3,
+      "facts": {
+        "seconds": [
+          1.05,
+          1.0,
+          0.97,
+          0.96,
+          1.0
+        ],
+        "target": 3.0
+      },
+      "error": null
+    },
+    {
+      "code": "T5",
+      "title": "Soft downtime is shown as down",
+      "passed": true,
+      "seconds": 2.3,
+      "facts": {
+        "down_after": 0.42,
+        "healthy_after": 0.43
+      },
+      "error": null
+    },
+    {
+      "code": "T6",
+      "title": "A frozen process becomes unknown, never falsely down",
+      "passed": true,
+      "seconds": 5.1,
+      "facts": {
+        "unknown_after": 3.0,
+        "healthy_after": 0.87
+      },
+      "error": null
+    },
+    {
+      "code": "T7",
+      "title": "Slow database is visible on the database and its callers",
+      "passed": true,
+      "seconds": 32.0,
+      "facts": {
+        "visible_after": 3.65,
+        "state": {
+          "authentication": "healthy",
+          "customer": "critical",
+          "account": "critical",
+          "transaction": "critical",
+          "payment": "critical",
+          "fraud": "critical",
+          "notification": "healthy",
+          "database": "critical"
+        }
+      },
+      "error": null
+    },
+    {
+      "code": "T8",
+      "title": "Whole bank down is shown and the backend keeps running",
+      "passed": true,
+      "seconds": 17.8,
+      "facts": {
+        "backend_still_ready": true,
+        "recovered_after": 0.0
+      },
+      "error": null
+    },
+    {
+      "code": "T9",
+      "title": "Measurement: predicted versus observed blast radius",
+      "passed": true,
+      "seconds": 742.4,
+      "facts": {
+        "trials": 3,
+        "control_no_fault": {},
+        "database": {
+          "predicted_impact": {
+            "account": 0.9,
+            "customer": 0.9,
+            "payment": 0.9,
+            "fraud": 0.81,
+            "transaction": 0.81,
+            "authentication": 0.45,
+            "notification": 0.243
+          },
+          "observed_rate": {
+            "authentication": 1.0,
+            "customer": 1.0,
+            "account": 1.0,
+            "transaction": 1.0,
+            "fraud": 1.0
+          },
+          "missed": [
+            "authentication"
+          ],
+          "false": [
+            "payment"
+          ]
+        },
+        "authentication": {
+          "predicted_impact": {
+            "customer": 0.81,
+            "transaction": 0.81,
+            "account": 0.72,
+            "notification": 0.2187
+          },
+          "observed_rate": {
+            "customer": 1.0,
+            "account": 1.0,
+            "transaction": 1.0
+          },
+          "missed": [],
+          "false": []
+        },
+        "account": {
+          "predicted_impact": {
+            "transaction": 0.9
+          },
+          "observed_rate": {
+            "transaction": 1.0
+          },
+          "missed": [],
+          "false": []
+        },
+        "payment": {
+          "predicted_impact": {
+            "transaction": 0.54
+          },
+          "observed_rate": {
+            "transaction": 1.0
+          },
+          "missed": [],
+          "false": []
+        },
+        "fraud": {
+          "predicted_impact": {
+            "transaction": 0.45
+          },
+          "observed_rate": {
+            "transaction": 1.0
+          },
+          "missed": [
+            "transaction"
+          ],
+          "false": []
+        },
+        "notification": {
+          "predicted_impact": {
+            "payment": 0.09
+          },
+          "observed_rate": {
+            "transaction": 1.0,
+            "payment": 1.0
+          },
+          "missed": [
+            "payment",
+            "transaction"
+          ],
+          "false": []
+        },
+        "total": {
+          "hits": 9,
+          "missed": 4,
+          "false": 1,
+          "precision": 0.9,
+          "recall": 0.69
+        }
+      },
+      "error": null
+    }
+  ]
+}

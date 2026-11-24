@@ -2,7 +2,8 @@
 
 Eight simulated banking microservices with synthetic data, workloads and failure injection.
 Design, dependency diagrams and limits: [docs/08-banking-microservices.md](../docs/08-banking-microservices.md).
-Latest measured results: [results/scenarios.md](results/scenarios.md).
+Latest measured results: [local processes](results/scenarios.md),
+[Docker containers](results/scenarios-docker.md).
 
 ## Install (Python 3.12+)
 
@@ -40,11 +41,19 @@ docker compose start payment
 docker compose down
 ```
 
-`bankctl.py` manages local processes only. Use one mode at a time: both use ports 8101–8108.
+Use one mode at a time: both use ports 8101–8108. `bankctl.py` controls local processes unless told
+otherwise:
+
+```powershell
+$env:BANKCTL_MODE = "docker"
+.\.venv\Scripts\python bankctl.py status      # and up, kill, fault, workload, integrity...
+Remove-Item Env:BANKCTL_MODE                   # back to local processes
+```
 
 ## Test
 
 ```powershell
 .\.venv\Scripts\python -m pytest -q       # unit and in-process integration tests
 .\.venv\Scripts\python scenarios.py       # 23 live scenarios, about 7 minutes, bank must be down
+$env:BANKCTL_MODE = "docker"; .\.venv\Scripts\python scenarios.py    # the same, on containers
 ```

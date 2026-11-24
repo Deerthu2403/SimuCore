@@ -8,6 +8,8 @@
   python bankctl.py integrity | logs <service> | reset
   python bankctl.py workload <normal|peak|abnormal> [--rps N] [--duration S]
 
+Set BANKCTL_MODE=docker to act on the containers instead (build them first).
+
 ``stop`` is graceful, ``kill`` is a crash. Each acts on one service only.
 """
 
@@ -304,6 +306,82 @@ class Bank:
         shutil.rmtree(self.runtime / "data", ignore_errors=True)
 
 
+class DockerBank(Bank):
+    """The same operations on containers. Selected with BANKCTL_MODE=docker."""
+
+    def __init__(self, runtime: Path = RUNTIME, env: dict[str, str] | None = None,
+                 project: str = "simucore-bank") -> None:
+        super().__init__(runtime, env)
+        self.project = project
+
+    @property
+    def key(self) -> str:
+        for line in (ROOT / ".env").read_text(encoding="utf-8").splitlines():
+            if line.startswith("BANK_INTERNAL_KEY="):
+                return line.partition("=")[2].strip()
+        raise BankCtlError("BANK_INTERNAL_KEY is missing from .env")
+
+    def _docker(self, *args: str, check: bool = True) -> str:
+        r = subprocess.run(["docker", *args], cwd=ROOT, env={**os.environ, **self.extra_env},
+                           capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if check and r.returncode:
+            raise BankCtlError(f"docker {' '.join(args)}: {r.stderr.strip()}")
+        return r.stdout.strip()
+
+    def _compose(self, *args: str) -> str:
+        return self._docker("compose", "-p", self.project, *args)
+
+    def inspect(self, name: str, fmt: str) -> str:
+        return self._docker("inspect", "-f", fmt, f"bank-{name}", check=False)
+
+    def process(self, name: str) -> None:
+        return None  # containers are tracked by Docker, not by a process record
+
+    def start(self, name: str, wait_s: float = 40.0) -> dict:
+        self.url(name)
+        self._compose("up", "-d", "--no-build", "--no-deps", name)
+        deadline = time.monotonic() + wait_s
+        while time.monotonic() < deadline:
+            info = self.live(name)
+            if info and info["status"] == "alive":
+                return info
+            time.sleep(0.2)
+        raise BankCtlError(f"{name} did not become live: "
+                           + self._docker("logs", "--tail", "15", f"bank-{name}", check=False))
+
+    def stop(self, name: str) -> str:
+        self._compose("stop", name)
+        # 143 = ended by SIGTERM: uvicorn finishes open requests, then re-raises the signal.
+        # 137 = Docker lost patience and sent SIGKILL.
+        code = self.inspect(name, "{{.State.ExitCode}}")
+        return "graceful" if code in ("0", "143") else f"forced (exit {code})"
+
+    def kill(self, name: str) -> str:
+        self._docker("kill", f"bank-{name}")
+        return "killed"
+
+    def up(self) -> None:
+        self._compose("up", "-d", "--no-build")
+        for name in START_ORDER:
+            self.start(name)
+
+    def down(self) -> None:
+        self._compose("stop")
+
+    def destroy(self) -> None:
+        """Remove this project's containers and its data volume."""
+        self._compose("down", "--volumes")
+
+    def reset(self) -> None:
+        raise BankCtlError("in Docker mode use: docker compose down --volumes")
+
+
+def make_bank(runtime: Path = RUNTIME, env: dict[str, str] | None = None, **kw) -> Bank:
+    if os.environ.get("BANKCTL_MODE") == "docker":
+        return DockerBank(runtime, env, **kw)
+    return Bank(runtime, env)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -329,7 +407,7 @@ def main() -> None:
     w.add_argument("--duration", type=float, default=20)
     w.add_argument("--seed", type=int, default=42)
     a = ap.parse_args()
-    bank = Bank()
+    bank = make_bank()
     try:
         if a.cmd in ("up", "down"):
             getattr(bank, a.cmd)()

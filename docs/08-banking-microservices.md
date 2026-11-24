@@ -126,7 +126,7 @@ customer down). Mixing the last two would make a fraud denial look like an outag
 | Planned stop | `bankctl.py stop account` | graceful shutdown of that one process |
 | Soft downtime | `bankctl.py fault fraud downtime` | 503 to everything, health included |
 | High latency | `bankctl.py fault database latency --latency-ms 800` | delay on each business request |
-| CPU exhaustion | `bankctl.py fault transaction resource_exhaustion --mode cpu` | threads burn CPU inside the process; measured: magnitude 0.5–0.85 adds about 10–20 % latency, 0.95 about 30 %, 1.0 is an outage |
+| CPU exhaustion | `bankctl.py fault transaction resource_exhaustion --mode cpu` | threads burn CPU inside the process; measured median transfer time: magnitude 0.25 up to 1.4×, 0.5 about 2–6×, 0.75 about 12–37×, 1.0 crippled (Linux container) or refused (Windows process) |
 | Memory exhaustion | `... --mode memory` | allocates up to the 256 MB budget; requests are shed |
 | Worker exhaustion | `... --mode slots` | occupies concurrency slots; requests queue, then are shed |
 | DB connections refused | `bankctl.py fault database db_connection_failure --mode refuse` | every acquire fails |
@@ -171,7 +171,8 @@ A service with no traffic has no latency or errors, so a broken caller looks hea
 uses it. Baselines are the p95 measured on one Windows laptop under the normal workload; re-measure
 them elsewhere (`baseline_latency_ms` in the dependency map).
 
-Measured results: [`backend/results/live_twin.md`](../backend/results/live_twin.md).
+Measured results: [local processes](../backend/results/live_twin.md),
+[Docker containers](../backend/results/live_twin_docker.md).
 
 ### First predicted-versus-observed comparison
 
@@ -188,7 +189,7 @@ prediction counts impact of 0.5 or more.
 | fraud | none | transaction (slow) | missed |
 | notification | none | payment, transaction (slow, 0 % errors) | missed both |
 
-Precision 0.90, recall 0.69. The model predicts who *fails* but not who merely becomes *slow* while
+Precision 0.90, recall 0.69, with the same hits and misses on local processes and on containers. The model predicts who *fails* but not who merely becomes *slow* while
 waiting for a dead optional dependency. The edge weights were not tuned to fit this result: closing
-that gap is the job of the calibration phase, and this is its first data. Six origins in one
-environment is a small sample.
+that gap is the job of the calibration phase, and this is its first data. Six origins on
+one computer is a small sample.
