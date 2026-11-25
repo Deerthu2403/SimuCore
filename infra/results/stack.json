@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-24T11:10:06+00:00",
+  "run_at": "2026-11-25T09:15:18+00:00",
   "passed": 16,
   "total": 16,
   "results": [
@@ -17,7 +17,7 @@
       "code": "P02",
       "title": "Passwords come from .env; defaults are refused; none leak to other services",
       "passed": true,
-      "seconds": 1.8,
+      "seconds": 2.1,
       "facts": {
         "grafana": {
           "default": 401,
@@ -52,7 +52,7 @@
       "code": "P05",
       "title": "Both real topologies and live simulated data fit the schema and read back equal",
       "passed": true,
-      "seconds": 1.3,
+      "seconds": 1.8,
       "facts": {
         "nodes": 35,
         "samples": 540
@@ -73,7 +73,7 @@
       "code": "P07",
       "title": "Bad data is refused, for the right reason",
       "passed": true,
-      "seconds": 0.3,
+      "seconds": 0.4,
       "facts": {
         "refused": 12
       },
@@ -102,7 +102,7 @@
       "code": "P10",
       "title": "Grafana's database role can read and do nothing else",
       "passed": true,
-      "seconds": 0.0,
+      "seconds": 0.1,
       "facts": {
         "refused": 14
       },
@@ -112,7 +112,7 @@
       "code": "P11",
       "title": "The 3D UI works through nginx: page, assets, API and live WebSocket",
       "passed": true,
-      "seconds": 4.2,
+      "seconds": 3.9,
       "facts": {
         "assets": 4,
         "live_updates": 3,
@@ -124,7 +124,7 @@
       "code": "P12",
       "title": "Prometheus scrapes the backend and has every node's metrics",
       "passed": true,
-      "seconds": 0.3,
+      "seconds": 0.4,
       "facts": {
         "series": 162
       },
@@ -134,7 +134,7 @@
       "code": "P13",
       "title": "Grafana: both data sources connect and every dashboard panel returns data",
       "passed": true,
-      "seconds": 0.4,
+      "seconds": 0.5,
       "facts": {
         "datasources": 2,
         "series_per_panel": {
@@ -150,10 +150,10 @@
       "code": "P14",
       "title": "A recreated backend (new address) is found again by nginx without a restart",
       "passed": true,
-      "seconds": 6.4,
+      "seconds": 6.7,
       "facts": {
         "address_changed": true,
-        "recovered_after_s": 1.3
+        "recovered_after_s": 2.0
       },
       "error": null
     },
@@ -161,7 +161,7 @@
       "code": "P15",
       "title": "PostgreSQL down: the live twin keeps running (it keeps state in memory)",
       "passed": true,
-      "seconds": 9.6,
+      "seconds": 10.1,
       "facts": {
         "updates_without_database": 3
       },
@@ -171,7 +171,7 @@
       "code": "P16",
       "title": "Data survives a PostgreSQL crash and a full stack down/up",
       "passed": true,
-      "seconds": 38.8,
+      "seconds": 39.1,
       "facts": {
         "postgres": "kept",
         "prometheus_history": "kept",

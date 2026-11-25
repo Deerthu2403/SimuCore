@@ -80,6 +80,9 @@ Rules:
 
 ## Frontend (React 18 + TypeScript + Vite + React Three Fiber)
 
+Replaced by the interface described in [doc 11](11-3d-interface.md). The rest of this section is the
+Phase 1 design.
+
 ### Structure (`frontend/src`)
 
 | Folder | Responsibility |

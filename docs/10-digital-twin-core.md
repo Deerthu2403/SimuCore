@@ -2,7 +2,7 @@
 
 The core keeps a virtual copy of the complete banking infrastructure and synchronises it with what
 monitoring reports. It lives in the backend (`backend/app/digital_twin/`) and is published as API
-version 2. Version 1 (the Phase 1 twin) still serves the existing 3D page and is unchanged.
+version 2. Version 1 (the Phase 1 twin) is unchanged. The 3D interface (doc 11) uses version 2.
 
 ## 1. Separation between the real system and its copy
 
@@ -45,10 +45,13 @@ flowchart LR
 | `server` | `server-docker` (the machine containers run on) | node-exporter |
 | | `server-bank-host` (only while the bank runs as processes) | what it hosts; marked `derived` |
 | `network` | `net-bank` | the calls it carries |
+| `load_balancer` | `lb-clients` (client entry) | derived: each service's requests minus the measured internal calls |
+| `gateway` | `gw-external` (external payment network) | derived: only through the Payment Gateway |
 | `monitoring` | `mon-prometheus`, `mon-service` | Prometheus; the fact that messages arrive |
 
 Connections (`source` depends on `target`): 14 measured `calls` between services (rate, failure rate,
-latency, circuit breaker), and structural ones: `stores_in`, `hosted_on`, `connected_to`, `monitors`.
+latency, circuit breaker), and structural ones: `stores_in`, `hosted_on`, `connected_to`, `monitors`, and `routes_to`
+(derived: traffic entering and leaving the bank).
 
 The structure follows reality: services report whether they run as a process or in a container, and
 the twin re-attaches them to the right server. `structure_version` then grows. A silent service stays
@@ -93,6 +96,7 @@ before is *recovering* afterwards, not healthy.
 | server, PostgreSQL | CPU 75 %, memory 85 %, 70 connections | CPU 90 %, memory 95 %, 90 connections | reported down |
 | connection | 2 % fail, or half of its timeout used | – | 50 % fail, or circuit open |
 | network | an unexplained failing connection | – | half of the connections to *working* services fail |
+| client entry | 2 % of customer requests fail, a service behind it failed | – | 50 % fail, or no service behind it works |
 
 Two rules avoid wrong conclusions. **Slow is not overloaded** unless the component is also short of
 its own resources; otherwise it is waiting for something else. **The network is not blamed** for

@@ -312,8 +312,8 @@ def test_failed_when_unreachable_at_once(twin, world):
     world.down("payment")
     change = run(twin, world)
     assert status(twin, "bank-payment") is S.FAILED
-    assert [t.object_id for t in change.transitions if t.object_kind == "component"][0] \
-        == "bank-payment"
+    assert any(t.object_id == "bank-payment" and t.to_status is S.FAILED
+               for t in change.transitions)
 
 
 def test_failed_when_most_requests_fail(twin, world):
@@ -602,7 +602,7 @@ def test_the_dependency_map_is_copied(world):
     twin = DigitalTwin(source)
     source["services"].clear()
     run(twin, world)
-    assert len(twin.components) == 15
+    assert len(twin.components) == 17
 
 
 def test_twin_code_cannot_reach_the_real_system():
@@ -707,7 +707,7 @@ def test_sync_survives_any_message():
             raw[rng.randrange(len(raw))] = chr(rng.randint(32, 126))
         sync.handle("".join(raw))
     assert "error" not in sync.rejected, sync.rejected
-    assert sync.twin.version >= version and len(sync.twin.components) == 15
+    assert sync.twin.version >= version and len(sync.twin.components) == 17
     for c in schemas.twin_view(sync.twin, T0).components:
         assert all(math.isfinite(x) for x in c.metrics.values())
 
@@ -750,7 +750,7 @@ def test_api_complete_twin(api):
     api.feed(2)
     body = api.get("/api/v2/twin").json()
     assert body["meta"]["sync"] == "live" and body["meta"]["api_version"] == "2.0"
-    assert len(body["components"]) == 15 and len(body["links"]) == 35
+    assert len(body["components"]) == 17 and len(body["links"]) == 40
     schemas.TwinView.model_validate(body)
     assert api.get("/api/v2/twin/summary").json() == body["summary"]
 
@@ -764,7 +764,8 @@ def test_api_parts(api):
     assert len(get("/api/v2/twin/components?type=microservice").json()) == 8
     assert get("/api/v2/twin/components/bank-payment").json()["findings"][0]["level"] == "failure"
     dep = get("/api/v2/twin/components/bank-transaction/dependencies").json()
-    assert dep["root_causes"] == ["bank-payment"] and dep["upstream"] and dep["downstream"] == []
+    assert dep["root_causes"] == ["bank-payment"] and dep["upstream"]
+    assert [d["id"] for d in dep["downstream"]] == [bp.CLIENT_ENTRY]
     assert len(get("/api/v2/twin/links?kind=calls").json()) == 14
     link = get("/api/v2/twin/links/bank-transaction->bank-payment").json()
     assert link["status"] == "failed" and link["mode"] == "required"
@@ -874,7 +875,7 @@ def test_websocket_resync_and_subscription(api):
         assert m["type"] == "snapshot" and [c["id"] for c in m["components"]] == ["bank-payment"]
         assert all("bank-payment" in (k["source"], k["target"]) for k in m["links"])
         ws.send_json({"type": "subscribe", "components": None})
-        assert len(ws.receive_json()["components"]) == 15
+        assert len(ws.receive_json()["components"]) == 17
         ws.send_json({"type": "resync"})
         assert ws.receive_json()["type"] == "snapshot"
 
@@ -943,3 +944,48 @@ def test_removed_components_disappear_from_clients(api):
         assert set(mirror.components) == {c["id"] for c in truth["components"]}
         assert set(mirror.links) == {k["id"] for k in truth["links"]}
         assert bp.BANK_HOST not in mirror.components
+
+
+# ------------------------------------------------------- where traffic enters and leaves
+def test_client_entry_counts_only_requests_from_outside(twin, world):
+    for n in NAMES:
+        world.m(n)["rps"] = 0.0
+    for e in EDGES:
+        world.links[e]["calls_per_s"] = 0.0
+    world.m("account")["rps"] = 12.0
+    world.links[("transaction", "account")]["calls_per_s"] = 9.0  # internal
+    world.m("customer")["rps"] = 4.0
+    run(twin, world)
+    entry = schemas.component_view(twin, bp.CLIENT_ENTRY)
+    assert entry.type is ComponentType.LOAD_BALANCER and entry.data_quality == "derived"
+    assert entry.metrics["ingress_rps"] == 7.0 and entry.metrics["routes"] == 4
+    routes = {k.target: twin.links[k.id].metrics["calls_per_s"]
+              for k in twin.blueprint.outgoing[bp.CLIENT_ENTRY]}
+    assert routes == {"bank-account": 3.0, "bank-customer": 4.0, "bank-transaction": 0.0,
+                      "bank-authentication": 0.0}
+
+
+def test_client_entry_status(twin, world):
+    run(twin, world)
+    world.down("account")
+    run(twin, world, 2)
+    assert status(twin, bp.CLIENT_ENTRY) is S.WARNING  # customers can still do other things
+    assert twin.root_causes(bp.CLIENT_ENTRY) == ["bank-account"]
+    for n in bp.ENTRY_SERVICES:
+        world.down(n)
+    run(twin, world, 2)
+    assert status(twin, bp.CLIENT_ENTRY) is S.FAILED
+    for n in NAMES:
+        world.services[n]["status"] = "unresponsive"
+    run(twin, world)
+    assert status(twin, bp.CLIENT_ENTRY) is S.UNKNOWN
+
+
+def test_external_network_is_seen_only_through_the_payment_gateway(twin, world):
+    run(twin, world)
+    ext = schemas.component_view(twin, bp.EXTERNAL_NET)
+    assert ext.type is ComponentType.GATEWAY and ext.status is S.HEALTHY
+    assert ext.metrics == {"calls_per_s": 10.0} and ext.data_quality == "derived"
+    world.down("payment")
+    run(twin, world)
+    assert status(twin, bp.EXTERNAL_NET) is S.UNKNOWN

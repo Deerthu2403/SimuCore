@@ -17,6 +17,9 @@ C, K = ComponentType, LinkKind
 BANK_STORE, PLATFORM_STORE = "store-bank", "store-platform"
 BANK_HOST, DOCKER_HOST = "server-bank-host", "server-docker"
 BANK_NET = "net-bank"
+CLIENT_ENTRY, EXTERNAL_NET = "lb-clients", "gw-external"
+#: services that customers call from outside
+ENTRY_SERVICES = ("authentication", "customer", "account", "transaction")
 PROMETHEUS, MONITOR = "mon-prometheus", "mon-service"
 #: monitoring's name for an infrastructure component -> the virtual component it describes
 INFRA_IDS = {"docker-host": DOCKER_HOST, "monitor-host": BANK_HOST, "synthetic-host": BANK_HOST,
@@ -100,6 +103,21 @@ def build(dependency_map: dict, deployments: dict[str, str]) -> Blueprint:
     for d in dependency_map["dependencies"]:
         link(ids[d["source"]], ids[d["target"]], K.CALLS, d["mode"], d["weight"], d["purpose"],
              d["timeout_ms"])
+
+    # --------------------------------------------------- where traffic enters and leaves
+    components.append(ComponentSpec(
+        CLIENT_ENTRY, C.LOAD_BALANCER, "Client entry", "Where customer requests enter the bank. "
+        "There is no separate load balancer process: its traffic is each service's measured "
+        "requests minus the measured internal calls.", "edge", "bank", 5))
+    for name in ENTRY_SERVICES:
+        if name in ids:
+            link(CLIENT_ENTRY, ids[name], K.ROUTES_TO, "degradable", 0.8, "customer requests")
+    components.append(ComponentSpec(
+        EXTERNAL_NET, C.GATEWAY, "External payment network", "The card and clearing network. The "
+        "Payment Gateway simulates it, so it is seen only through that service.", "edge", "bank",
+        4))
+    if "payment" in ids:
+        link(ids["payment"], EXTERNAL_NET, K.ROUTES_TO, "required", 0.6, "external payments")
 
     # ---------------------------------------------------------------- databases
     components.append(ComponentSpec(

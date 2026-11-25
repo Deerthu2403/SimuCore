@@ -17,6 +17,7 @@ from app.digital_twin.blueprint import Blueprint
 from app.digital_twin.health import (
     Persistence,
     StatusTracker,
+    entry_findings,
     infra_findings,
     link_findings,
     service_findings,
@@ -174,6 +175,17 @@ class DigitalTwin:
             else:
                 unknown_reason = "can only be observed through the Database Service"
                 state.metrics, state.quality = {}, "none"
+        elif cid == bp.CLIENT_ENTRY:
+            findings = self._entry(state, obs)
+            unknown_reason = "none of the services behind it reports"
+        elif cid == bp.EXTERNAL_NET:
+            so = obs.services.get("payment")
+            if so and so.status == "up":
+                state.metrics = _numbers({"calls_per_s": so.metrics.get("rps")})
+                state.quality, findings = "derived", []
+            else:
+                unknown_reason = "can only be observed through the Payment Gateway"
+                state.metrics, state.quality = {}, "none"
         elif cid == bp.MONITOR:  # this very message is the evidence
             state.metrics, state.quality = {}, "derived"
             findings = self._dependency_findings(cid)
@@ -181,6 +193,26 @@ class DigitalTwin:
             findings, reason = self._infrastructure(cid, state, obs)
             unknown_reason = reason or unknown_reason
         self._conclude("component", cid, state, findings, unknown_reason, now, out)
+
+    def _entry(self, state: ObjectState, obs: Observation) -> list[Finding] | None:
+        routes = [(n, self.components[self.blueprint.service_ids[n]].status)
+                  for n in bp.ENTRY_SERVICES if n in self.blueprint.service_ids]
+        seen = [n for n, s in routes if s is not Status.UNKNOWN]
+        if not seen:
+            state.metrics, state.quality = {}, "none"
+            return None
+        traffic = {n: ingress(n, obs) for n in seen}
+        total = sum(traffic.values())
+        failing = sum(traffic[n] * (obs.services[n].metrics.get("error_rate") or 0.0)
+                      for n in seen if n in obs.services)
+        failed = sum(s is Status.FAILED for _, s in routes)
+        state.metrics = {"ingress_rps": round(total, 2), "routes": float(len(routes)),
+                         "routes_failed": float(failed)}
+        if total:
+            state.metrics["error_rate"] = round(failing / total, 4)
+        state.quality = "derived"
+        return entry_findings(state.metrics, failed, len(routes)) \
+            + self._dependency_findings(bp.CLIENT_ENTRY)
 
     def _infrastructure(self, cid: str, state: ObjectState,
                         obs: Observation) -> tuple[list[Finding] | None, str]:
@@ -225,9 +257,12 @@ class DigitalTwin:
                 state.metrics, state.quality = _numbers(m), "complete"
                 findings = link_findings(spec, m)
         else:
-            # Structural: it has no metrics, and is as good as what it leads to.
+            # It has no measurements of its own, and is as good as what it leads to.
             target = self.components[spec.target].status
             state.quality = "derived"
+            state.metrics = {}
+            if spec.kind is LinkKind.ROUTES_TO:
+                state.metrics = self._route_metrics(spec.source, spec.target, obs)
             if target is Status.UNKNOWN:
                 findings, reason = None, f"{spec.target} is unknown"
             elif target is Status.FAILED:
@@ -236,6 +271,18 @@ class DigitalTwin:
             else:
                 findings = []
         self._conclude("link", lid, state, findings, reason, now, out)
+
+    def _route_metrics(self, source: str, target: str, obs: Observation) -> dict[str, float]:
+        names = {v: k for k, v in self.blueprint.service_ids.items()}
+        if source == bp.CLIENT_ENTRY:
+            so = obs.services.get(names[target])
+            if so is None or so.status != "up":
+                return {}
+            return _numbers({"calls_per_s": ingress(names[target], obs),
+                             "failure_rate": so.metrics.get("error_rate"),
+                             "latency_ms": so.metrics.get("latency_mean_ms")})
+        so = obs.services.get(names[source])
+        return _numbers({"calls_per_s": so.metrics.get("rps")}) if so and so.status == "up" else {}
 
     def _update_network(self, obs: Observation, now: datetime, out: list[Transition]) -> None:
         """The network is blamed only for failing calls that the called service does not explain."""
@@ -377,6 +424,17 @@ class DigitalTwin:
     def statuses(self) -> dict[str, str]:
         return {**{c: s.status.value for c, s in self.components.items()},
                 **{k: s.status.value for k, s in self.links.items()}}
+
+
+def ingress(service: str, obs: Observation) -> float:
+    """Requests per second from outside: all requests minus the measured internal calls."""
+    so = obs.services.get(service)
+    if so is None or so.status != "up":
+        return 0.0
+    internal = sum((m.get("calls_per_s") or 0.0) for (_, target), m in obs.links.items()
+                   if target == service)
+    outside = (so.metrics.get("rps") or 0.0) - internal
+    return round(outside, 2) if outside >= 0.15 else 0.0  # below that it is sampling noise
 
 
 def _numbers(metrics: dict[str, float | None]) -> dict[str, float]:

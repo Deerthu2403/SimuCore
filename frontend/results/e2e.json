@@ -1,0 +1,444 @@
+{
+ "run_at": "2026-11-25T09:33:54Z",
+ "passed": 32,
+ "total": 32,
+ "results": [
+  {
+   "code": "U01",
+   "title": "The scene draws every component and connection of the twin, with the right status and colour",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "components": {
+     "microservice": 8,
+     "load_balancer": 1,
+     "gateway": 1,
+     "database": 2,
+     "server": 2,
+     "network": 1,
+     "monitoring": 2
+    },
+    "links": 40,
+    "canvas": [
+     940,
+     662
+    ],
+    "draw_calls": 39,
+    "triangles": 22718
+   },
+   "seconds": 0
+  },
+  {
+   "code": "U02",
+   "title": "Every number shown equals the twin's value (compared at the same version)",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "components": 17,
+    "values_compared": 135,
+    "differences": 0
+   },
+   "seconds": 5
+  },
+  {
+   "code": "U03",
+   "title": "Clicking each 3D object selects exactly that component",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "clicked": 17
+   },
+   "seconds": 30
+  },
+  {
+   "code": "U04",
+   "title": "Hovering shows name and live values, highlights, and follows from list to scene",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "label": "Account Management CPU 9.9 % · RAM 17.9 % · p95 22.8 ms · 10 req/s",
+    "of": "Account Management Service"
+   },
+   "seconds": 1
+  },
+  {
+   "code": "U05",
+   "title": "Mouse camera: drag rotates, right-drag pans, wheel zooms; dragging selects nothing",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "rotated_rad": -0.91,
+    "zoom": [
+     28.7,
+     5.6,
+     71.9
+    ]
+   },
+   "seconds": 12
+  },
+  {
+   "code": "U06",
+   "title": "Camera buttons and keys: four views, zoom, rotate, pan, reset; smooth, not jumping",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "views": {
+     "View from above": [
+      0,
+      0.02
+     ],
+     "Front view": [
+      0,
+      1.24
+     ],
+     "Side view": [
+      -1.45,
+      1.1
+     ],
+     "Overview": [
+      -0.3,
+      0.98
+     ]
+    },
+    "largest_step_share": 0.08
+   },
+   "seconds": 37
+  },
+  {
+   "code": "U07",
+   "title": "Focus: button, key and double click bring a component into the middle",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "off_centre_px": 56
+   },
+   "seconds": 10
+  },
+  {
+   "code": "U08",
+   "title": "Search: by name, type, status, port; keyboard and mouse; flies to what was found",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "second_hit": "gw-external"
+   },
+   "seconds": 7
+  },
+  {
+   "code": "U09",
+   "title": "Isolate: only the component and its direct connections remain; links too; and back",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "bank-transaction": 9,
+    "store-bank": 2,
+    "net-bank": 9
+   },
+   "seconds": 14
+  },
+  {
+   "code": "U10",
+   "title": "Dependency view: exactly the twin's dependencies, left and right by steps, interactive",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "bank-account": {
+     "needs": 4,
+     "needed_by": 2
+    },
+    "bank-payment": {
+     "needs": 7,
+     "needed_by": 2
+    },
+    "lb-clients": {
+     "needs": 11,
+     "needed_by": 0
+    },
+    "moved_from": 2.5
+   },
+   "seconds": 24
+  },
+  {
+   "code": "U11",
+   "title": "Connections: click one in the scene; its live values equal the twin's",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "link": "lb-clients->bank-account"
+   },
+   "seconds": 1
+  },
+  {
+   "code": "U12",
+   "title": "Live: values change by themselves, without reload, within a fraction of a second of the twin",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "different_values": 9,
+    "lag_ms": [
+     24,
+     28,
+     26,
+     36,
+     36,
+     25,
+     35,
+     30,
+     38,
+     24
+    ],
+    "curves": 8
+   },
+   "seconds": 38
+  },
+  {
+   "code": "U13",
+   "title": "Request flow follows measured traffic: more traffic, more and faster lights",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "low": {
+     "flow": 0.32,
+     "speed": 0.2
+    },
+    "high": {
+     "flow": 0.63,
+     "speed": 0.29
+    }
+   },
+   "seconds": 38
+  },
+  {
+   "code": "U14",
+   "title": "Crash: the 3D object changes at once; alert, message, event, dependents, links; then recovery",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "crash_to_scene_s": 3.3,
+    "twin_to_scene_ms": 0,
+    "fully_red_ms": 642,
+    "healthy_again_s": 8.7
+   },
+   "seconds": 36
+  },
+  {
+   "code": "U15",
+   "title": "Overload: warning message, alert, sign, load gauge, distinct look",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "seen_after_s": 7.7
+   },
+   "seconds": 35
+  },
+  {
+   "code": "U16",
+   "title": "Hung: shown as unknown, without numbers, neither healthy nor failed",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "seen_after_s": 2
+   },
+   "seconds": 9
+  },
+  {
+   "code": "U17",
+   "title": "Slow: warning, not overload; the sign appears and the reason is named",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "seen_after_s": 3.7
+   },
+   "seconds": 25
+  },
+  {
+   "code": "U18",
+   "title": "Display: hide types, highlight a status, cables, names, detail, panels, legend",
+   "passed": true,
+   "error": null,
+   "seconds": 24
+  },
+  {
+   "code": "U19",
+   "title": "Twin backend restarts: the page says so, turns grey, reconnects by itself and is right again",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "said_after_s": 0,
+    "live_again_s": 6.4
+   },
+   "seconds": 9
+  },
+  {
+   "code": "U20",
+   "title": "Monitoring stops: everything unknown, banner, no alarm per component; then back",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "said_after_s": 7.9,
+    "live_again_s": 6.2
+   },
+   "seconds": 18
+  },
+  {
+   "code": "U21",
+   "title": "Event history equals the twin's record, survives a reload, filters, and leads to the object",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "events": 150
+   },
+   "seconds": 4
+  },
+  {
+   "code": "U22",
+   "title": "Lost and damaged messages: the page notices, resyncs, never shows a wrong state",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "silence_noticed_s": 11.8,
+    "connections": 3
+   },
+   "seconds": 23
+  },
+  {
+   "code": "U23",
+   "title": "Screen sizes from 3440 to 390 pixels: nothing overflows, everything stays reachable",
+   "passed": true,
+   "error": null,
+   "measured": [
+    "3440x1440: scene 2780x1202",
+    "1920x1080: scene 1260x842",
+    "1366x768: scene 706x530",
+    "1024x768: scene 458x530",
+    "768x1024: scene 768x826",
+    "390x844: scene 390x646"
+   ],
+   "seconds": 23
+  },
+  {
+   "code": "U24",
+   "title": "Reduced motion: no travelling lights, no flights, all information remains",
+   "passed": true,
+   "error": null,
+   "seconds": 3
+  },
+  {
+   "code": "U25",
+   "title": "Keyboard alone: reach, select, isolate, explore and leave without a mouse",
+   "passed": true,
+   "error": null,
+   "seconds": 3
+  },
+  {
+   "code": "U26",
+   "title": "No 3D graphics: the panels still work and say what is missing",
+   "passed": true,
+   "error": null,
+   "seconds": 2
+  },
+  {
+   "code": "U27",
+   "title": "Performance: 17, 300 and 1000 components, all changing with every message, stay smooth",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "17": {
+     "links": 40,
+     "fps": 60,
+     "frame_ms_p95": 17,
+     "draw_ms_median": 1.2,
+     "draw_calls": 39,
+     "triangles": 22718,
+     "detail_level": 0
+    },
+    "300": {
+     "links": 700,
+     "fps": 59,
+     "frame_ms_p95": 17.3,
+     "draw_ms_median": 1.1,
+     "draw_calls": 39,
+     "triangles": 240980,
+     "detail_level": 0
+    },
+    "1000": {
+     "links": 2349,
+     "fps": 53,
+     "frame_ms_p95": 23.6,
+     "draw_ms_median": 1.1,
+     "draw_calls": 39,
+     "triangles": 801010,
+     "detail_level": 0,
+     "pick_ms": 2
+    }
+   },
+   "seconds": 78
+  },
+  {
+   "code": "U28",
+   "title": "Nothing accumulates: 60 changes of view and 6 of structure leave memory as it was",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "after_20": {
+     "mb": 9.9,
+     "nodes": 810,
+     "listeners": 246,
+     "geometries": 35,
+     "textures": 18
+    },
+    "after_80": {
+     "mb": 10.6,
+     "nodes": 810,
+     "listeners": 246,
+     "geometries": 35,
+     "textures": 18
+    }
+   },
+   "seconds": 25
+  },
+  {
+   "code": "U29",
+   "title": "Bank moves into containers: the scene rearranges itself, without reload",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "in_containers": 16,
+    "as_processes": 17
+   },
+   "seconds": 105
+  },
+  {
+   "code": "U30",
+   "title": "The page only reads: no writing request, nothing from other sites, no stored data",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "requests": 9,
+    "hosts": [
+     "localhost:8080"
+    ]
+   },
+   "seconds": 9
+  },
+  {
+   "code": "U31",
+   "title": "Hostile text in the data is shown as text, never run",
+   "passed": true,
+   "error": null,
+   "seconds": 3
+  },
+  {
+   "code": "U32",
+   "title": "Six services fail together: the scene agrees with the twin at every moment",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "statuses_compared": 7182,
+    "differences": 0,
+    "skipped_between_versions": 2
+   },
+   "seconds": 76
+  }
+ ]
+}

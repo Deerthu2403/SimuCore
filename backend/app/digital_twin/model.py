@@ -13,6 +13,8 @@ class ComponentType(str, Enum):
     DATABASE = "database"
     SERVER = "server"
     NETWORK = "network"
+    LOAD_BALANCER = "load_balancer"
+    GATEWAY = "gateway"
     MONITORING = "monitoring"
 
 
@@ -41,6 +43,7 @@ STATUS_LEVEL = {s: v for v, s in LEVEL_STATUS.items()}
 
 class LinkKind(str, Enum):
     CALLS = "calls"  # network connection between two services
+    ROUTES_TO = "routes_to"  # traffic entering or leaving the bank
     STORES_IN = "stores_in"  # a service and the database behind it
     HOSTED_ON = "hosted_on"
     CONNECTED_TO = "connected_to"  # attached to a network

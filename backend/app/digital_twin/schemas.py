@@ -23,7 +23,7 @@ from app.digital_twin.model import (
 from app.digital_twin.state import DigitalTwin
 
 API_VERSION = "2.0"
-LAYERS = ["application", "data", "network", "compute", "platform"]
+LAYERS = ["edge", "application", "data", "network", "compute", "platform"]
 SEVERITY = [Status.HEALTHY, Status.UNKNOWN, Status.RECOVERING, Status.WARNING, Status.OVERLOADED,
             Status.FAILED]
 
@@ -259,7 +259,8 @@ METRIC_UNITS = {
     "disk_read_bps": "B/s", "disk_write_bps": "B/s", "database_bytes": "B",
     "commits_per_s": "commits/s", "cache_hit_ratio": "ratio", "targets_up": "",
     "targets_total": "", "slowest_scrape_s": "s", "series": "", "hosted_services": "",
-    "hosted_running": "", "hosted_cpu_pct": "%", "hosted_mem_bytes": "B",
+    "hosted_running": "", "ingress_rps": "req/s", "routes": "", "routes_failed": "",
+    "hosted_cpu_pct": "%", "hosted_mem_bytes": "B",
 }
 STATUS_MEANING = {
     Status.HEALTHY: "Works normally.",

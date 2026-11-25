@@ -1,5 +1,7 @@
 # 06 — 3D User Interface Design
 
+> The original design (Phase 1). What was built is described in [doc 11](11-3d-interface.md).
+
 Theme: dark Network-Operations-Centre (NOC) aesthetic, high-contrast status
 colours, readable at a distance on a wall display.
 

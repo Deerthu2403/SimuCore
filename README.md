@@ -9,8 +9,8 @@ propagate through dependencies, runs what-if simulations, optimises resources
 with NSGA-II, calibrates itself from actual-vs-predicted outcomes and explains
 every recommendation.
 
-> **Status: foundation, simulated banking microservices, live twin.** The 3D twin shows either its
-> built-in synthetic data or the eight services running in [`banking-sim/`](banking-sim). No real
+> **Status: simulated banking microservices, monitoring, digital twin core, 3D interface.** The 3D interface shows the
+> live twin of the eight services running in [`banking-sim/`](banking-sim). No real
 > bank is involved.
 > Production data enters later only through secure, read-only telemetry adapters.
 
@@ -19,7 +19,7 @@ every recommendation.
 | Capability | Module | Phase | Status |
 |---|---|---|---|
 | Real-time infrastructure monitoring | `backend/app/twin`, `adapters` | 1 | ✅ working (simulated source) |
-| Interactive 3D digital twin | `frontend/src/scene` | 1 | ✅ working |
+| Interactive 3D digital twin | `frontend` | 1 / 5 | ✅ live 3D data centre on the twin core ([doc 11](docs/11-3d-interface.md)) |
 | Dependency-aware failure propagation | `backend/app/propagation` | 1 / 4 | ✅ v1 (weighted max-product BFS) |
 | Explainable recommendations | `backend/app/explain`, `recommendation` | 1 / 5 | ✅ propagation explanations; rest in P5 |
 | AI anomaly & failure prediction | `backend/app/ml` | 3 | 📐 contract defined |
@@ -51,7 +51,8 @@ SimuCore/
 │   ├── tests/                pytest suite
 │   └── requirements*.txt
 ├── frontend/                 React + TypeScript + React Three Fiber
-│   └── src/{scene,components,store,services,types}
+│   ├── src/{twin,scene,ui,test}
+│   └── e2e/                  tests in a real browser
 ├── banking-sim/              Eight simulated banking microservices, workloads, failure scenarios
 ├── monitoring/               Monitoring service: collection, checks, history, streaming
 ├── database/schema/          PostgreSQL DDL (auto-applied by the container)
@@ -71,6 +72,7 @@ SimuCore/
 8. [Simulated banking microservices](docs/08-banking-microservices.md)
 9. [Monitoring and data collection](docs/09-monitoring.md)
 10. [Digital twin core](docs/10-digital-twin-core.md)
+11. [Interactive 3D interface](docs/11-3d-interface.md)
 
 ## Getting started (local, Windows PowerShell)
 
@@ -93,23 +95,32 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173 — the twin connects over WebSocket and starts
-updating every second. Click a component, then **Simulate failure → blast radius**.
+Open http://localhost:5173. The 3D interface shows the twin core, which needs the monitoring service;
+the simplest way to run all of it is the Docker stack below. Without it the page waits for data.
 
 API docs: http://localhost:8000/docs · Prometheus metrics: http://localhost:8000/metrics/
 
 ### Show the running banking services
+
+With the Docker stack running, start the bank and give it some traffic, then open
+http://localhost:8080:
 
 ```powershell
 cd banking-sim; .\.venv\Scripts\python bankctl.py up
 ```
 
 ```powershell
+cd banking-sim; .\.venv\Scripts\python bankctl.py workload normal --duration 3600
+```
+
+The Phase 1 twin (API v1) can also show the services, without monitoring:
+
+```powershell
 cd backend; .\.venv\Scripts\python -m uvicorn app.main:app --env-file bank-services.env --port 8000
 ```
 
-Then `npm run dev` in `frontend` as above. Leave out `--env-file` to use the built-in
-simulation. Docker Compose for the backend still uses the built-in simulation.
+Leave out `--env-file` to use the built-in simulation. The API v1 in Docker uses the built-in
+simulation.
 
 ### Full stack with Docker
 
@@ -141,7 +152,11 @@ infra/docker-compose.yml down --volumes`.
 
 ```powershell
 cd backend; .\.venv\Scripts\python -m pytest -q
-cd frontend; npm run typecheck; npm run build
+cd frontend; npm run typecheck; npm test; npm run build
+```
+
+```powershell
+cd frontend; node e2e/run.mjs   # the 3D interface in Microsoft Edge, about 12 minutes
 ```
 
 ```powershell

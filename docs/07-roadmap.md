@@ -34,8 +34,9 @@ flowchart LR
 | **Live twin adapter** *(done)* | Read-only adapter from `/telemetry` to the twin, so the 3D view shows the running services | Banking services | killing a service turns its node red within 3 s |
 | **Monitoring** *(done)* | Monitoring service, full metric set, Prometheus and exporters, PostgreSQL history, quality events, WebSocket, twin adapter, synthetic data (`monitoring/`, doc 09). Covers most of P2 Persistence: metric storage, partitions, history API | Banking services | every metric matches independent truth through two pipelines; every monitoring failure is detected |
 | **Digital twin core** *(done)* | Virtual infrastructure, six statuses, live synchronisation, history, API v2 and WebSocket with a published format for the 3D frontend (`backend/app/digital_twin`, doc 10) | Monitoring | every real change is reflected; chaos test without a mismatch |
+| **3D interface** *(done)* | Interactive 3D data centre on API v2: live statuses and metrics, request flow, isolate, dependency view, search, alerts, history (`frontend/`, doc 11). Includes the instanced rendering planned for P7 | Digital twin core | every interaction and real fault verified in a real browser; 1 000 objects above 50 fps |
 
-The phase numbers above are unchanged; the two unnumbered rows come between P1 and P2.
+The phase numbers above are unchanged; the unnumbered rows come between P1 and P2.
 
 ## Phase 2 backlog
 

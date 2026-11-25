@@ -62,6 +62,8 @@
           "database",
           "server",
           "network",
+          "load_balancer",
+          "gateway",
           "monitoring"
         ],
         "title": "ComponentType",
@@ -335,6 +337,7 @@
       "LinkKind": {
         "enum": [
           "calls",
+          "routes_to",
           "stores_in",
           "hosted_on",
           "connected_to",
@@ -686,6 +689,8 @@
           "database",
           "server",
           "network",
+          "load_balancer",
+          "gateway",
           "monitoring"
         ],
         "title": "ComponentType",
@@ -959,6 +964,7 @@
       "LinkKind": {
         "enum": [
           "calls",
+          "routes_to",
           "stores_in",
           "hosted_on",
           "connected_to",

@@ -29,3 +29,7 @@ Thumbs.db
 # Simulated bank runtime state
 .runtime*/
 *.log
+
+# Browser test pictures that only help while testing
+frontend/results/size-*.png
+frontend/results/error-*.png

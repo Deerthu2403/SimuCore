@@ -104,6 +104,22 @@ def store_findings(m: dict[str, float | None]) -> list[Finding]:
     return out
 
 
+def entry_findings(m: dict[str, float], failed_routes: int, routes: int) -> list[Finding]:
+    """The client entry: can customers get in, and do their requests succeed?"""
+    out: list[Finding] = []
+    if routes and failed_routes == routes:
+        out.append(Finding(L.FAILURE, "no_route", "no service that customers use is working",
+                           "routes_failed", failed_routes, routes, immediate=True))
+    errors = m.get("error_rate")
+    if m.get("ingress_rps", 0.0) >= MIN_RPS and errors is not None:
+        for level, limit in ((L.FAILURE, 0.5), (L.WARNING, 0.02)):
+            if errors >= limit:
+                out.append(Finding(level, "errors", f"{errors:.1%} of customer requests fail",
+                                   "error_rate", errors, limit))
+                break
+    return out
+
+
 def infra_findings(obs: InfraObs) -> list[Finding]:
     if obs.status == "down":
         return [Finding(L.FAILURE, "unavailable", obs.reason or "not reachable", immediate=True)]
