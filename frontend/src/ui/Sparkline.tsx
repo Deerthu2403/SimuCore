@@ -25,8 +25,8 @@ export function segments(points: readonly samples.Point[]): samples.Point[][] {
   return out;
 }
 
-export function Sparkline({ id, metric, units, label, width = 148, height = 44 }: {
-  id: string; metric: string; units: Record<string, string>; label: string; width?: number; height?: number;
+export function Sparkline({ id, metric, units, label, width = 148, height = 44, fixedTop }: {
+  id: string; metric: string; units: Record<string, string>; label: string; width?: number; height?: number; fixedTop?: number;
 }) {
   const version = useSyncExternalStore(samples.subscribe, samples.currentVersion);
   const svg = useRef<SVGSVGElement>(null);
@@ -37,13 +37,13 @@ export function Sparkline({ id, metric, units, label, width = 148, height = 44 }
     const t1 = all.length ? all[all.length - 1].t : 0;
     const t0 = t1 - WINDOW_MS;
     const shown = all.filter((p) => p.t >= t0);
-    const top = niceMax(Math.max(0, ...shown.map((p) => p.v)));
+    const top = fixedTop ?? niceMax(Math.max(0, ...shown.map((p) => p.v)));
     const x = (t: number) => 2 + ((t - t0) / WINDOW_MS) * (width - 8);
     const y = (v: number) => height - 3 - (v / top) * (height - 9);
     return { shown, t0, t1, top, x, y, parts: segments(shown) };
     // `version` is what changes when points are added in place
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [all, version, width, height]);
+  }, [all, version, width, height, fixedTop]);
 
   if (shown.length < 2) return <div className="spark-empty" style={{ height }}>collecting…</div>;
 

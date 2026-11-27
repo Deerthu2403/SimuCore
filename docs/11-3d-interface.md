@@ -48,6 +48,10 @@ A change of status sends one wave over the object. Failures and overloads also g
 alert. Blinking rows follow the measured load. The number and speed of the moving lights follow the
 measured traffic on a logarithmic scale; red lights are failing requests and do not arrive.
 
+The opinions of the AI service (doc 12) are drawn outside the status ring and in their own colours: an
+anomaly as a violet ring of moving dashes, a predictive warning as a pink arc as long as the event is
+probable, each with a sign beside the plate and a line in the label. The status stays as measured.
+
 When the page is not up to date (connection lost, twin not receiving measurements), a banner says
 so, and the scene loses its colour.
 
@@ -71,7 +75,7 @@ in the scene or in the graph in the panel, continues from there.
 
 **Panels:** infrastructure overview (by type, can be hidden in the scene), service health, live metrics
 with five-minute curves and a table, dependencies, alerts (twin and monitoring), event history
-(two hours from the database plus live). The numbers in the top bar highlight one status.
+(two hours from the database plus live), AI insights. The numbers in the top bar highlight one status.
 
 ## 4. Structure of the code
 
@@ -126,10 +130,10 @@ To see something happen: `bankctl.py kill payment`, then `bankctl.py start payme
 
 | | |
 |---|---|
-| `npm test` | 114 unit tests: mirror, socket, curves, graph, layout, animation, picking, camera, geometry, agreement with the published API format |
-| `node e2e/run.mjs` | 32 checks in Microsoft Edge with real mouse and keyboard, real faults in the simulated bank: [results](../frontend/results/e2e.md) |
+| `npm test` | 130 unit tests: mirror, socket, curves, graph, layout, animation, picking, camera, geometry, opinions of the AI, agreement with the published API format |
+| `node e2e/run.mjs` | 36 checks in Microsoft Edge with real mouse and keyboard, real faults in the simulated bank: [results](../frontend/results/e2e.md) |
 
-The browser tests need Edge and the Docker stack, start and stop the bank themselves, and take about 12
+The browser tests need Edge and the Docker stack, start and stop the bank themselves, and take about 20
 minutes. They compare the page with the twin through a read-only object, `window.__simucore`.
 
 ## 7. Known limits

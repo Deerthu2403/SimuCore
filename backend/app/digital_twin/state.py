@@ -24,6 +24,7 @@ from app.digital_twin.health import (
     store_findings,
     worst,
 )
+from app.digital_twin.insights import Insight, InsightMessage
 from app.digital_twin.model import (
     Change,
     ComponentType,
@@ -65,6 +66,9 @@ class DigitalTwin:
                                                    for c in self.blueprint.components}
         self.links: dict[str, ObjectState] = {k: ObjectState() for k in self.blueprint.links}
         self._trackers: dict[str, StatusTracker] = {}
+        #: what the AI service thinks, per component; never part of a status
+        self.insights: dict[str, Insight] = {}
+        self.insights_at: datetime | None = None
 
     # ------------------------------------------------------------------ changing
     def apply(self, obs: Observation, now: datetime | None = None) -> Change:
@@ -118,6 +122,32 @@ class DigitalTwin:
                                f"no monitoring data for {seconds:.0f} s", now, transitions)
         return self._change(before, transitions, False)
 
+    # ---------------------------------------------------------------- opinions of the AI
+    def apply_insights(self, m: InsightMessage, now: datetime) -> Change:
+        """Replace all opinions. They must be about the same kind of data as the twin's own."""
+        if not self.synchronised or m.origin != self.origin:
+            return self._set_insights({}, None)
+        if self.insights_at and m.assessed_at < self.insights_at:
+            return Change(self.version)
+        return self._set_insights({c: i for c, i in m.insights.items() if c in self.components},
+                                  m.assessed_at)
+
+    def expire_insights(self, now: datetime, after_s: float) -> Change:
+        """Old opinions are worth nothing."""
+        if self.insights_at is None or now - self.insights_at <= timedelta(seconds=after_s):
+            return Change(self.version)
+        return self._set_insights({}, None)
+
+    def _set_insights(self, new: dict[str, Insight], at: datetime | None) -> Change:
+        old = self.insights
+        changed = {c for c in old.keys() | new.keys()
+                   if (old[c].essence if c in old else None)
+                   != (new[c].essence if c in new else None)}
+        self.insights, self.insights_at = new, at
+        if changed:
+            self.version += 1
+        return Change(self.version, frozenset(changed))
+
     def clone(self) -> DigitalTwin:
         """An independent copy: nothing done to it affects this twin, or the other way round."""
         twin = copy.deepcopy(self)
@@ -146,6 +176,7 @@ class DigitalTwin:
 
     def _forget(self) -> None:
         self._trackers.clear()
+        self.insights, self.insights_at = {}, None
         for state in (*self.components.values(), *self.links.values()):
             state.status, state.since, state.previous = Status.UNKNOWN, None, None
             state.metrics, state.findings, state.quality = {}, (), "none"

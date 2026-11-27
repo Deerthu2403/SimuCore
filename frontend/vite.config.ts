@@ -20,6 +20,10 @@ export default defineConfig({
         ws: true,
         rewrite: (path) => path.replace(/^\/monitoring/, ""),
       },
+      "/ai": {
+        target: process.env.SIMUCORE_AI_URL ?? "http://localhost:8300",
+        rewrite: (path) => path.replace(/^\/ai/, ""),
+      },
       "/ws": { target: backend.replace(/^http/, "ws"), ws: true },
     },
   },

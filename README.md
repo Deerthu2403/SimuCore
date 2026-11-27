@@ -22,7 +22,7 @@ every recommendation.
 | Interactive 3D digital twin | `frontend` | 1 / 5 | ✅ live 3D data centre on the twin core ([doc 11](docs/11-3d-interface.md)) |
 | Dependency-aware failure propagation | `backend/app/propagation` | 1 / 4 | ✅ v1 (weighted max-product BFS) |
 | Explainable recommendations | `backend/app/explain`, `recommendation` | 1 / 5 | ✅ propagation explanations; rest in P5 |
-| AI anomaly & failure prediction | `backend/app/ml` | 3 | 📐 contract defined |
+| AI anomaly & failure prediction | `intelligence` | 3 / 6 | ✅ Isolation Forest and XGBoost, validated on the running bank ([doc 12](docs/12-ai-module.md)) |
 | What-if simulation (SimPy) | `backend/app/simulation/whatif.py` | 4 | 📐 contract defined |
 | Resource optimisation (NSGA-II) | `backend/app/optimization` | 5 | 📐 contract defined |
 | Self-calibration | `backend/app/calibration` | 5 | 📐 contract defined |
@@ -55,6 +55,7 @@ SimuCore/
 │   └── e2e/                  tests in a real browser
 ├── banking-sim/              Eight simulated banking microservices, workloads, failure scenarios
 ├── monitoring/               Monitoring service: collection, checks, history, streaming
+├── intelligence/             AI service: anomaly detection, failure prediction, training
 ├── database/schema/          PostgreSQL DDL (auto-applied by the container)
 ├── infra/                    docker-compose, Prometheus, Grafana provisioning
 └── docs/                     architecture & design documents
@@ -73,6 +74,7 @@ SimuCore/
 9. [Monitoring and data collection](docs/09-monitoring.md)
 10. [Digital twin core](docs/10-digital-twin-core.md)
 11. [Interactive 3D interface](docs/11-3d-interface.md)
+12. [Anomaly detection and failure prediction](docs/12-ai-module.md)
 
 ## Getting started (local, Windows PowerShell)
 
@@ -128,7 +130,7 @@ simulation.
 Copy-Item .env.example .env
 ```
 
-Fill in the six empty passwords in `.env` (the file says how), then:
+Fill in the seven empty passwords in `.env` (the file says how), then:
 
 ```powershell
 docker compose --env-file .env -f infra/docker-compose.yml up -d --build
@@ -144,6 +146,7 @@ infra/docker-compose.yml down --volumes`.
 | Frontend | http://localhost:8080 |
 | Backend API | http://localhost:8000/docs |
 | Monitoring API | http://localhost:8200/docs |
+| AI API | http://localhost:8300/docs |
 | Prometheus | http://localhost:9090 |
 | Grafana | http://localhost:3000 (dashboard *SimuCore - Twin Overview*) |
 | PostgreSQL | localhost:5432 (schema from `database/schema/001_init.sql`) |
@@ -156,7 +159,7 @@ cd frontend; npm run typecheck; npm test; npm run build
 ```
 
 ```powershell
-cd frontend; node e2e/run.mjs   # the 3D interface in Microsoft Edge, about 12 minutes
+cd frontend; node e2e/run.mjs   # the 3D interface in Microsoft Edge, about 20 minutes
 ```
 
 ```powershell
@@ -165,4 +168,4 @@ backend\.venv\Scripts\python infra/tests/stack_check.py   # the whole Docker sta
 
 Latest stack results: [infra/results/stack.md](infra/results/stack.md).
 
-Optional ML stack for Phase 3+: `pip install -r requirements-ml.txt`.
+AI module (training, recordings, live check): see [doc 12](docs/12-ai-module.md).

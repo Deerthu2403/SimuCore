@@ -33,9 +33,12 @@ class NotFresh(BadMessage):
 
 
 class MonitoringFeed:
+    hosts = ALLOWED_HOSTS
+    what = "the SimuCore monitoring service"
+
     def __init__(self, url: str) -> None:
-        if urlsplit(url).scheme != "ws" or urlsplit(url).hostname not in ALLOWED_HOSTS:
-            raise ValueError(f"Refusing {url!r}: not the SimuCore monitoring service")
+        if urlsplit(url).scheme != "ws" or urlsplit(url).hostname not in self.hosts:
+            raise ValueError(f"Refusing {url!r}: not {self.what}")
         self.url = url
 
     async def messages(self) -> AsyncIterator[str | bytes]:

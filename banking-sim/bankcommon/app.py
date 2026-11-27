@@ -72,7 +72,9 @@ class ServiceContext:
 
     async def _hold_memory(self, fault: Fault) -> None:
         target = self.settings.mem_limit_mb * 0.98 * fault.req.magnitude
-        need = int(max(0.0, target - self.telemetry.memory_mb()))
+        # Measured afresh: a value from before an earlier fault was replaced would still contain
+        # what that one had allocated, and the memory would drop instead of growing.
+        need = int(max(0.0, target - self.telemetry.memory_mb(fresh=True)))
         ballast = [b"\x01" * 1_048_576 for _ in range(min(need, self.settings.mem_limit_mb))]
         fault.cleanup.append(ballast.clear)
 

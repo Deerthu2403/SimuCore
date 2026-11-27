@@ -35,6 +35,44 @@ export interface DependencyRef {
   link_status: Status;
 }
 
+/** Isolation Forest, unsupervised: how unusual this moment is. */
+export interface AnomalyOpinion {
+  score: number;
+  level: "normal" | "unusual" | "abnormal";
+  condition: string;
+  /** When the anomaly was confirmed; null if it is not (yet). */
+  since: string | null;
+  contributions: { metric: string; share: number; deviation: number }[];
+}
+
+/** XGBoost, supervised: probability of the target within the horizon. */
+export interface RiskOpinion {
+  target: "degradation" | "failure";
+  probability: number | null;
+  level: "low" | "elevated" | "high" | "present" | "recovering";
+  horizon_s: number;
+}
+
+export interface PredictiveWarning {
+  id: string;
+  target: "degradation" | "failure";
+  probability: number;
+  peak: number;
+  opened_at: string;
+  horizon_s: number;
+}
+
+export interface Insight {
+  assessed_at: string;
+  model: string;
+  anomaly: AnomalyOpinion | null;
+  anomaly_reason: string;
+  risks: RiskOpinion[];
+  risk_reason: string;
+  warnings: PredictiveWarning[];
+  reasons: { metric: string; text: string; contribution: number }[];
+}
+
 export interface TwinComponent {
   id: string;
   type: ComponentType;
@@ -51,6 +89,8 @@ export interface TwinComponent {
   data_quality: Quality;
   attributes: Record<string, unknown>;
   dependencies: { depends_on: DependencyRef[]; dependents: DependencyRef[] };
+  /** What the AI service thinks; never part of the status. */
+  insight: Insight | null;
   display: {
     layer: string;
     group: string;
@@ -86,6 +126,9 @@ export interface Summary {
   links: number;
   links_failed: number;
   needs_attention: string[];
+  ai: "live" | "absent";
+  anomalies: string[];
+  predicted: string[];
 }
 
 export interface Meta {

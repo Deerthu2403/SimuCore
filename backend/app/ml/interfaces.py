@@ -1,4 +1,7 @@
-"""ML module contracts (implemented in Phase 3).
+"""ML module contracts of the Phase 1 design.
+
+The module that was built is the AI service in ``intelligence/`` (docs/12-ai-module.md). These
+contracts are kept for the Phase 1 twin (API v1).
 
 * ``AnomalyDetector`` - IsolationForest per node kind, trained on healthy baseline
   windows; z-score fallback while untrained. Emits ``AnomalyEvent``.

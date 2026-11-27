@@ -1,0 +1,2587 @@
+{
+ "made_at": "2026-11-25T13:17:54+00:00",
+ "targets": {
+  "horizon_s": 120,
+  "gap_s": 4,
+  "cool_down_s": 60
+ },
+ "sets": {
+  "train": {
+   "episodes": 700,
+   "kinds": {
+    "cpu": 49,
+    "leak": 48,
+    "slots": 44,
+    "pool": 43,
+    "leak_crash": 42,
+    "errors": 41,
+    "part_pool": 41,
+    "load": 37,
+    "slow": 35,
+    "calm": 33,
+    "outage": 33,
+    "wave": 32,
+    "part_errors": 31,
+    "part_cpu": 29,
+    "blip_slow": 29,
+    "blip_cpu": 28,
+    "restart": 28,
+    "part_slow": 28,
+    "crash": 27,
+    "part_leak": 22
+   },
+   "rows": 1458656,
+   "degradation": {
+    "usable": 990222,
+    "positive": 68244
+   },
+   "failure": {
+    "usable": 996147,
+    "positive": 61031
+   }
+  },
+  "valid": {
+   "episodes": 140,
+   "kinds": {
+    "leak": 14,
+    "leak_crash": 11,
+    "slots": 11,
+    "load": 10,
+    "restart": 9,
+    "cpu": 9,
+    "part_cpu": 9,
+    "slow": 9,
+    "blip_cpu": 9,
+    "errors": 7,
+    "part_leak": 6,
+    "wave": 6,
+    "blip_slow": 6,
+    "crash": 6,
+    "pool": 5,
+    "outage": 4,
+    "part_slow": 4,
+    "part_pool": 3,
+    "part_errors": 1,
+    "calm": 1
+   },
+   "rows": 290416,
+   "degradation": {
+    "usable": 195562,
+    "positive": 14305
+   },
+   "failure": {
+    "usable": 197430,
+    "positive": 12371
+   }
+  },
+  "calib": {
+   "episodes": 220,
+   "kinds": {
+    "restart": 18,
+    "leak_crash": 18,
+    "slots": 17,
+    "pool": 16,
+    "cpu": 14,
+    "errors": 13,
+    "slow": 13,
+    "blip_slow": 12,
+    "load": 11,
+    "blip_cpu": 11,
+    "leak": 11,
+    "crash": 10,
+    "outage": 10,
+    "part_pool": 9,
+    "part_slow": 9,
+    "part_errors": 8,
+    "wave": 7,
+    "part_leak": 5,
+    "calm": 5,
+    "part_cpu": 3
+   },
+   "rows": 456320,
+   "degradation": {
+    "usable": 309227,
+    "positive": 23383
+   },
+   "failure": {
+    "usable": 311534,
+    "positive": 20802
+   }
+  },
+  "test": {
+   "episodes": 260,
+   "kinds": {
+    "leak_crash": 23,
+    "slots": 19,
+    "part_leak": 19,
+    "slow": 16,
+    "load": 16,
+    "cpu": 16,
+    "pool": 15,
+    "errors": 15,
+    "blip_cpu": 14,
+    "calm": 12,
+    "restart": 12,
+    "part_slow": 11,
+    "part_pool": 11,
+    "outage": 10,
+    "part_errors": 10,
+    "blip_slow": 10,
+    "crash": 9,
+    "part_cpu": 8,
+    "wave": 8,
+    "leak": 6
+   },
+   "rows": 536112,
+   "degradation": {
+    "usable": 359384,
+    "positive": 28310
+   },
+   "failure": {
+    "usable": 361907,
+    "positive": 25730
+   }
+  },
+  "shifted": {
+   "episodes": 160,
+   "kinds": {
+    "slow": 15,
+    "leak_crash": 14,
+    "wave": 13,
+    "pool": 12,
+    "leak": 11,
+    "outage": 10,
+    "load": 10,
+    "restart": 8,
+    "slots": 7,
+    "part_leak": 6,
+    "part_pool": 6,
+    "crash": 6,
+    "cpu": 6,
+    "blip_cpu": 6,
+    "calm": 6,
+    "errors": 6,
+    "part_slow": 5,
+    "part_cpu": 5,
+    "blip_slow": 4,
+    "part_errors": 4
+   },
+   "rows": 332304,
+   "degradation": {
+    "usable": 224045,
+    "positive": 17034
+   },
+   "failure": {
+    "usable": 227239,
+    "positive": 14493
+   }
+  }
+ },
+ "anomaly_training": {
+  "tried": {
+   "0% abnormal": 0.87,
+   "5% abnormal": 0.9224,
+   "10% abnormal": 0.9212
+  },
+  "chosen": "5% abnormal"
+ },
+ "thresholds": {
+  "degradation": 0.4907975494861603,
+  "failure": 0.4805692434310913
+ },
+ "sanity": {
+  "degradation": {
+   "auc_after_shuffling_labels": {
+    "each": [
+     0.5083,
+     0.5346,
+     0.5127,
+     0.5082,
+     0.4801
+    ],
+    "mean": 0.5088
+   },
+   "auc_with_true_labels": 0.8605
+  },
+  "failure": {
+   "auc_after_shuffling_labels": {
+    "each": [
+     0.56,
+     0.4689,
+     0.4354,
+     0.4778,
+     0.5344
+    ],
+    "mean": 0.4953
+   },
+   "auc_with_true_labels": 0.8679
+  }
+ },
+ "parameters": {
+  "objective": "binary:logistic",
+  "eval_metric": "aucpr",
+  "eta": 0.05,
+  "max_depth": 5,
+  "min_child_weight": 20,
+  "subsample": 0.8,
+  "colsample_bytree": 0.6,
+  "lambda": 2.0,
+  "tree_method": "hist",
+  "max_bin": 128,
+  "trees": {
+   "degradation": 201,
+   "failure": 155
+  }
+ },
+ "importance": {
+  "degradation": {
+   "dependency_pool": 0.23239,
+   "dependency_memory_trend": 0.07843,
+   "dependency_memory": 0.07534,
+   "memory_seconds_to_limit": 0.07134,
+   "errors_now": 0.06614,
+   "latency_now": 0.04405,
+   "latency_level": 0.04049,
+   "pool_level": 0.03459,
+   "latency_change_20s": 0.03393,
+   "dependency_latency": 0.0333,
+   "cpu_seconds_to_limit": 0.03279,
+   "memory_level": 0.03273,
+   "errors_mean_20s": 0.02726,
+   "cpu_change_20s": 0.02257,
+   "dependency_cpu": 0.02047,
+   "errors_trend_60s": 0.01051,
+   "errors_spread_60s": 0.00991,
+   "cpu_level": 0.00991,
+   "network_mean_20s": 0.00911,
+   "connections_change_20s": 0.00892,
+   "dependency_errors": 0.00841,
+   "errors_level": 0.00815,
+   "memory_mean_20s": 0.00687,
+   "requests_mean_20s": 0.00675,
+   "latency_spread_60s": 0.00592,
+   "cpu_trend_60s": 0.00563,
+   "connections_trend_60s": 0.00481,
+   "database_mean_20s": 0.00407,
+   "cpu_mean_20s": 0.00405,
+   "latency_mean_20s": 0.00384,
+   "database_change_20s": 0.00344,
+   "memory_now": 0.00342,
+   "connections_spread_60s": 0.00323,
+   "database_spread_60s": 0.00292,
+   "connections_mean_20s": 0.00288,
+   "in_flight_level": 0.00279,
+   "latency_trend_60s": 0.00265,
+   "network_spread_60s": 0.00264,
+   "database_now": 0.00253,
+   "cpu_spread_60s": 0.00194,
+   "memory_spread_60s": 0.00194,
+   "network_now": 0.00191,
+   "cpu_now": 0.00186,
+   "database_trend_60s": 0.00169,
+   "requests_spread_60s": 0.0014,
+   "errors_change_20s": 0.00137,
+   "requests_now": 0.00136,
+   "connections_now": 0.00135,
+   "network_trend_60s": 0.00116,
+   "requests_change_20s": 0.00111,
+   "network_change_20s": 0.00106,
+   "requests_trend_60s": 0.00073,
+   "dependency_down": 0.00072,
+   "memory_trend_60s": 0.00045,
+   "memory_change_20s": 0.0004,
+   "queue_level": 0.00036
+  },
+  "failure": {
+   "dependency_pool": 0.25753,
+   "dependency_memory_trend": 0.09841,
+   "errors_now": 0.08918,
+   "memory_seconds_to_limit": 0.07553,
+   "dependency_memory": 0.06577,
+   "dependency_latency": 0.05414,
+   "pool_level": 0.04806,
+   "latency_change_20s": 0.03388,
+   "memory_level": 0.03003,
+   "database_change_20s": 0.02956,
+   "latency_level": 0.02161,
+   "dependency_cpu": 0.01979,
+   "errors_trend_60s": 0.01683,
+   "errors_mean_20s": 0.0158,
+   "connections_change_20s": 0.01484,
+   "errors_spread_60s": 0.01415,
+   "memory_now": 0.00928,
+   "errors_level": 0.00857,
+   "dependency_errors": 0.00821,
+   "network_mean_20s": 0.00799,
+   "requests_mean_20s": 0.00594,
+   "latency_spread_60s": 0.00512,
+   "database_now": 0.00485,
+   "latency_now": 0.00413,
+   "network_change_20s": 0.0038,
+   "network_spread_60s": 0.00373,
+   "cpu_change_20s": 0.0036,
+   "database_spread_60s": 0.00354,
+   "cpu_trend_60s": 0.00338,
+   "database_mean_20s": 0.00335,
+   "cpu_mean_20s": 0.00332,
+   "latency_trend_60s": 0.00307,
+   "connections_spread_60s": 0.00281,
+   "memory_mean_20s": 0.00271,
+   "memory_spread_60s": 0.0025,
+   "cpu_level": 0.00234,
+   "database_trend_60s": 0.00233,
+   "latency_mean_20s": 0.00218,
+   "requests_spread_60s": 0.00213,
+   "network_now": 0.00194,
+   "cpu_seconds_to_limit": 0.00189,
+   "requests_now": 0.00171,
+   "cpu_spread_60s": 0.00161,
+   "connections_trend_60s": 0.00161,
+   "dependency_down": 0.00158,
+   "requests_change_20s": 0.00129,
+   "connections_mean_20s": 0.00119,
+   "cpu_now": 0.00096,
+   "errors_change_20s": 0.00075,
+   "network_trend_60s": 0.00045,
+   "memory_change_20s": 0.00036,
+   "memory_trend_60s": 0.00031,
+   "connections_now": 0.00017,
+   "requests_trend_60s": 0.00016,
+   "queue_level": 2e-05,
+   "in_flight_level": 2e-05
+  }
+ },
+ "test": {
+  "anomaly": {
+   "isolation_forest": {
+    "roc_auc": 0.9327,
+    "average_precision": 0.8925,
+    "positives": 17918,
+    "rows": 163438,
+    "prevalence": 0.1096,
+    "precision": 0.9791,
+    "recall": 0.7461,
+    "f1": 0.8468,
+    "false_positive_rate": 0.002,
+    "tp": 13368,
+    "fp": 286,
+    "fn": 4550,
+    "tn": 145234
+   },
+   "baseline_largest_deviation": {
+    "roc_auc": 0.9318,
+    "average_precision": 0.8848,
+    "positives": 17918,
+    "rows": 163438,
+    "prevalence": 0.1096
+   },
+   "disturbances_noticed": {
+    "blip_cpu": {
+     "noticed": 13,
+     "of": 14
+    },
+    "blip_slow": {
+     "noticed": 5,
+     "of": 10
+    },
+    "cpu": {
+     "noticed": 16,
+     "of": 16
+    },
+    "errors": {
+     "noticed": 15,
+     "of": 15
+    },
+    "leak": {
+     "noticed": 6,
+     "of": 6
+    },
+    "leak_crash": {
+     "noticed": 23,
+     "of": 23
+    },
+    "load": {
+     "noticed": 16,
+     "of": 16
+    },
+    "part_cpu": {
+     "noticed": 8,
+     "of": 8
+    },
+    "part_errors": {
+     "noticed": 8,
+     "of": 10
+    },
+    "part_leak": {
+     "noticed": 19,
+     "of": 19
+    },
+    "part_pool": {
+     "noticed": 0,
+     "of": 10
+    },
+    "part_slow": {
+     "noticed": 11,
+     "of": 11
+    },
+    "pool": {
+     "noticed": 15,
+     "of": 15
+    },
+    "slots": {
+     "noticed": 13,
+     "of": 19
+    },
+    "slow": {
+     "noticed": 15,
+     "of": 16
+    }
+   },
+   "noticed_by_kind": {
+    "blip_cpu": {
+     "moments": 86,
+     "noticed": 0.535
+    },
+    "blip_slow": {
+     "moments": 70,
+     "noticed": 0.329
+    },
+    "cpu": {
+     "moments": 1050,
+     "noticed": 0.985
+    },
+    "errors": {
+     "moments": 1076,
+     "noticed": 0.706
+    },
+    "leak": {
+     "moments": 427,
+     "noticed": 1.0
+    },
+    "leak_crash": {
+     "moments": 1220,
+     "noticed": 0.993
+    },
+    "load": {
+     "moments": 7555,
+     "noticed": 0.797
+    },
+    "part_cpu": {
+     "moments": 499,
+     "noticed": 0.994
+    },
+    "part_errors": {
+     "moments": 247,
+     "noticed": 0.304
+    },
+    "part_leak": {
+     "moments": 1079,
+     "noticed": 0.925
+    },
+    "part_pool": {
+     "moments": 511,
+     "noticed": 0.0
+    },
+    "part_slow": {
+     "moments": 435,
+     "noticed": 0.998
+    },
+    "pool": {
+     "moments": 1282,
+     "noticed": 0.533
+    },
+    "slots": {
+     "moments": 1289,
+     "noticed": 0.134
+    },
+    "slow": {
+     "moments": 1092,
+     "noticed": 0.906
+    }
+   },
+   "condition_named_correctly": 0.97,
+   "named": {
+    "cpu": {
+     "resources": 120
+    },
+    "leak": {
+     "resources": 113,
+     "errors": 7
+    },
+    "leak_crash": {
+     "resources": 120
+    },
+    "slow": {
+     "latency": 113,
+     "database": 7
+    },
+    "pool": {
+     "database": 112,
+     "latency": 8
+    },
+    "errors": {
+     "errors": 120
+    },
+    "load": {
+     "traffic": 74,
+     "latency": 21,
+     "database": 17,
+     "connections": 5,
+     "resources": 2,
+     "errors": 1
+    }
+   }
+  },
+  "degradation": {
+   "xgboost": {
+    "roc_auc": 0.8523,
+    "average_precision": 0.581,
+    "positives": 28310,
+    "rows": 359384,
+    "prevalence": 0.0788,
+    "precision": 0.7651,
+    "recall": 0.4424,
+    "f1": 0.5606,
+    "false_positive_rate": 0.0116,
+    "tp": 12523,
+    "fp": 3844,
+    "fn": 15787,
+    "tn": 327230,
+    "brier": 0.0463,
+    "brier_of_always_saying_the_average": 0.0726
+   },
+   "reliability": [
+    {
+     "said": 0.0283,
+     "happened": 0.0325,
+     "rows": 308132
+    },
+    {
+     "said": 0.1276,
+     "happened": 0.1108,
+     "rows": 18382
+    },
+    {
+     "said": 0.2193,
+     "happened": 0.1611,
+     "rows": 9806
+    },
+    {
+     "said": 0.3445,
+     "happened": 0.2738,
+     "rows": 3762
+    },
+    {
+     "said": 0.4515,
+     "happened": 0.3898,
+     "rows": 3538
+    },
+    {
+     "said": 0.5201,
+     "happened": 0.5034,
+     "rows": 2179
+    },
+    {
+     "said": 0.6551,
+     "happened": 0.5955,
+     "rows": 1209
+    },
+    {
+     "said": 0.7175,
+     "happened": 0.6955,
+     "rows": 4292
+    },
+    {
+     "said": 0.8397,
+     "happened": 0.8587,
+     "rows": 1833
+    },
+    {
+     "said": 0.9612,
+     "happened": 0.9438,
+     "rows": 6251
+    }
+   ],
+   "baseline_rule": {
+    "roc_auc": 0.727,
+    "average_precision": 0.276,
+    "positives": 28310,
+    "rows": 359384,
+    "prevalence": 0.0788
+   },
+   "baseline_logistic_regression": {
+    "roc_auc": 0.8429,
+    "average_precision": 0.5829,
+    "positives": 28310,
+    "rows": 359384,
+    "prevalence": 0.0788
+   },
+   "events": {
+    "failures": 491,
+    "announced": 417,
+    "announced_share": 0.8493,
+    "announced_10s_before": 405,
+    "announced_30s_before": 335,
+    "lead_s_median": 58.0,
+    "lead_s_p10": 22.0,
+    "alarms": 638,
+    "false_alarms": 237,
+    "alarm_precision": 0.6285,
+    "false_alarms_per_service_hour": 1.187,
+    "service_hours": 199.66,
+    "by_kind": {
+     "cpu": {
+      "announced": 15,
+      "of": 15
+     },
+     "cpu (affected)": {
+      "announced": 18,
+      "of": 18
+     },
+     "crash": {
+      "announced": 0,
+      "of": 9
+     },
+     "crash (affected)": {
+      "announced": 4,
+      "of": 21
+     },
+     "errors": {
+      "announced": 14,
+      "of": 15
+     },
+     "errors (affected)": {
+      "announced": 40,
+      "of": 40
+     },
+     "leak": {
+      "announced": 6,
+      "of": 6
+     },
+     "leak (affected)": {
+      "announced": 5,
+      "of": 5
+     },
+     "leak_crash": {
+      "announced": 23,
+      "of": 23
+     },
+     "leak_crash (affected)": {
+      "announced": 34,
+      "of": 34
+     },
+     "load": {
+      "announced": 94,
+      "of": 94
+     },
+     "outage": {
+      "announced": 0,
+      "of": 10
+     },
+     "outage (affected)": {
+      "announced": 7,
+      "of": 26
+     },
+     "part_errors": {
+      "announced": 3,
+      "of": 3
+     },
+     "part_errors (affected)": {
+      "announced": 4,
+      "of": 4
+     },
+     "part_slow": {
+      "announced": 3,
+      "of": 3
+     },
+     "part_slow (affected)": {
+      "announced": 12,
+      "of": 12
+     },
+     "pool": {
+      "announced": 15,
+      "of": 15
+     },
+     "pool (affected)": {
+      "announced": 90,
+      "of": 90
+     },
+     "slots": {
+      "announced": 0,
+      "of": 18
+     },
+     "slow": {
+      "announced": 3,
+      "of": 3
+     },
+     "slow (affected)": {
+      "announced": 27,
+      "of": 27
+     }
+    }
+   }
+  },
+  "failure": {
+   "xgboost": {
+    "roc_auc": 0.8679,
+    "average_precision": 0.6151,
+    "positives": 25730,
+    "rows": 361907,
+    "prevalence": 0.0711,
+    "precision": 0.7573,
+    "recall": 0.5142,
+    "f1": 0.6125,
+    "false_positive_rate": 0.0126,
+    "tp": 13230,
+    "fp": 4241,
+    "fn": 12500,
+    "tn": 331936,
+    "brier": 0.039,
+    "brier_of_always_saying_the_average": 0.066
+   },
+   "reliability": [
+    {
+     "said": 0.0257,
+     "happened": 0.0278,
+     "rows": 323734
+    },
+    {
+     "said": 0.161,
+     "happened": 0.1338,
+     "rows": 14512
+    },
+    {
+     "said": 0.2783,
+     "happened": 0.2111,
+     "rows": 2819
+    },
+    {
+     "said": 0.3301,
+     "happened": 0.274,
+     "rows": 2792
+    },
+    {
+     "said": 0.4734,
+     "happened": 0.4292,
+     "rows": 2619
+    },
+    {
+     "said": 0.5226,
+     "happened": 0.5456,
+     "rows": 2357
+    },
+    {
+     "said": 0.6962,
+     "happened": 0.6626,
+     "rows": 4265
+    },
+    {
+     "said": 0.774,
+     "happened": 0.8372,
+     "rows": 1327
+    },
+    {
+     "said": 0.8234,
+     "happened": 0.8614,
+     "rows": 700
+    },
+    {
+     "said": 0.9705,
+     "happened": 0.9541,
+     "rows": 6782
+    }
+   ],
+   "baseline_rule": {
+    "roc_auc": 0.7315,
+    "average_precision": 0.2541,
+    "positives": 25730,
+    "rows": 361907,
+    "prevalence": 0.0711
+   },
+   "baseline_logistic_regression": {
+    "roc_auc": 0.8624,
+    "average_precision": 0.6218,
+    "positives": 25730,
+    "rows": 361907,
+    "prevalence": 0.0711
+   },
+   "events": {
+    "failures": 453,
+    "announced": 412,
+    "announced_share": 0.9095,
+    "announced_10s_before": 385,
+    "announced_30s_before": 342,
+    "lead_s_median": 64.0,
+    "lead_s_p10": 20.0,
+    "alarms": 700,
+    "false_alarms": 289,
+    "alarm_precision": 0.5871,
+    "false_alarms_per_service_hour": 1.4374,
+    "service_hours": 201.06,
+    "by_kind": {
+     "cpu": {
+      "announced": 2,
+      "of": 2
+     },
+     "cpu (affected)": {
+      "announced": 18,
+      "of": 18
+     },
+     "crash": {
+      "announced": 0,
+      "of": 9
+     },
+     "crash (affected)": {
+      "announced": 10,
+      "of": 21
+     },
+     "errors": {
+      "announced": 15,
+      "of": 15
+     },
+     "errors (affected)": {
+      "announced": 40,
+      "of": 40
+     },
+     "leak": {
+      "announced": 6,
+      "of": 6
+     },
+     "leak (affected)": {
+      "announced": 5,
+      "of": 5
+     },
+     "leak_crash": {
+      "announced": 23,
+      "of": 23
+     },
+     "leak_crash (affected)": {
+      "announced": 34,
+      "of": 34
+     },
+     "load": {
+      "announced": 94,
+      "of": 94
+     },
+     "outage": {
+      "announced": 0,
+      "of": 10
+     },
+     "outage (affected)": {
+      "announced": 15,
+      "of": 26
+     },
+     "part_errors": {
+      "announced": 3,
+      "of": 3
+     },
+     "part_errors (affected)": {
+      "announced": 4,
+      "of": 4
+     },
+     "part_slow (affected)": {
+      "announced": 11,
+      "of": 11
+     },
+     "pool": {
+      "announced": 15,
+      "of": 15
+     },
+     "pool (affected)": {
+      "announced": 90,
+      "of": 90
+     },
+     "slow (affected)": {
+      "announced": 27,
+      "of": 27
+     }
+    }
+   }
+  }
+ },
+ "shifted": {
+  "anomaly": {
+   "isolation_forest": {
+    "roc_auc": 0.923,
+    "average_precision": 0.8598,
+    "positives": 11979,
+    "rows": 97620,
+    "prevalence": 0.1227,
+    "precision": 0.7969,
+    "recall": 0.8173,
+    "f1": 0.807,
+    "false_positive_rate": 0.0291,
+    "tp": 9790,
+    "fp": 2495,
+    "fn": 2189,
+    "tn": 83146
+   },
+   "baseline_largest_deviation": {
+    "roc_auc": 0.9189,
+    "average_precision": 0.8684,
+    "positives": 11979,
+    "rows": 97620,
+    "prevalence": 0.1227
+   },
+   "disturbances_noticed": {
+    "blip_cpu": {
+     "noticed": 4,
+     "of": 6
+    },
+    "blip_slow": {
+     "noticed": 3,
+     "of": 4
+    },
+    "cpu": {
+     "noticed": 6,
+     "of": 6
+    },
+    "errors": {
+     "noticed": 6,
+     "of": 6
+    },
+    "leak": {
+     "noticed": 11,
+     "of": 11
+    },
+    "leak_crash": {
+     "noticed": 14,
+     "of": 14
+    },
+    "load": {
+     "noticed": 10,
+     "of": 10
+    },
+    "part_cpu": {
+     "noticed": 5,
+     "of": 5
+    },
+    "part_errors": {
+     "noticed": 2,
+     "of": 3
+    },
+    "part_leak": {
+     "noticed": 6,
+     "of": 6
+    },
+    "part_pool": {
+     "noticed": 1,
+     "of": 6
+    },
+    "part_slow": {
+     "noticed": 4,
+     "of": 5
+    },
+    "pool": {
+     "noticed": 11,
+     "of": 12
+    },
+    "slots": {
+     "noticed": 5,
+     "of": 7
+    },
+    "slow": {
+     "noticed": 13,
+     "of": 15
+    }
+   },
+   "noticed_by_kind": {
+    "blip_cpu": {
+     "moments": 36,
+     "noticed": 0.472
+    },
+    "blip_slow": {
+     "moments": 21,
+     "noticed": 0.667
+    },
+    "cpu": {
+     "moments": 345,
+     "noticed": 1.0
+    },
+    "errors": {
+     "moments": 546,
+     "noticed": 0.863
+    },
+    "leak": {
+     "moments": 804,
+     "noticed": 0.994
+    },
+    "leak_crash": {
+     "moments": 838,
+     "noticed": 0.993
+    },
+    "load": {
+     "moments": 5549,
+     "noticed": 0.886
+    },
+    "part_cpu": {
+     "moments": 237,
+     "noticed": 0.979
+    },
+    "part_errors": {
+     "moments": 133,
+     "noticed": 0.639
+    },
+    "part_leak": {
+     "moments": 316,
+     "noticed": 0.994
+    },
+    "part_pool": {
+     "moments": 271,
+     "noticed": 0.059
+    },
+    "part_slow": {
+     "moments": 196,
+     "noticed": 0.959
+    },
+    "pool": {
+     "moments": 951,
+     "noticed": 0.476
+    },
+    "slots": {
+     "moments": 578,
+     "noticed": 0.144
+    },
+    "slow": {
+     "moments": 1158,
+     "noticed": 0.885
+    }
+   },
+   "condition_named_correctly": 0.943,
+   "named": {
+    "cpu": {
+     "resources": 120
+    },
+    "leak": {
+     "resources": 115,
+     "errors": 5
+    },
+    "leak_crash": {
+     "resources": 120
+    },
+    "slow": {
+     "latency": 106,
+     "database": 14
+    },
+    "pool": {
+     "database": 114,
+     "latency": 6
+    },
+    "errors": {
+     "errors": 120
+    },
+    "load": {
+     "traffic": 62,
+     "database": 26,
+     "resources": 10,
+     "connections": 9,
+     "errors": 8,
+     "latency": 5
+    }
+   }
+  },
+  "degradation": {
+   "xgboost": {
+    "roc_auc": 0.8679,
+    "average_precision": 0.6179,
+    "positives": 17034,
+    "rows": 224045,
+    "prevalence": 0.076,
+    "precision": 0.7314,
+    "recall": 0.5051,
+    "f1": 0.5975,
+    "false_positive_rate": 0.0153,
+    "tp": 8604,
+    "fp": 3160,
+    "fn": 8430,
+    "tn": 203851,
+    "brier": 0.0446,
+    "brier_of_always_saying_the_average": 0.0702
+   },
+   "reliability": [
+    {
+     "said": 0.0369,
+     "happened": 0.0213,
+     "rows": 163622
+    },
+    {
+     "said": 0.1328,
+     "happened": 0.0604,
+     "rows": 27005
+    },
+    {
+     "said": 0.2181,
+     "happened": 0.1162,
+     "rows": 15236
+    },
+    {
+     "said": 0.3441,
+     "happened": 0.2046,
+     "rows": 4038
+    },
+    {
+     "said": 0.4489,
+     "happened": 0.3176,
+     "rows": 2821
+    },
+    {
+     "said": 0.5198,
+     "happened": 0.3954,
+     "rows": 1563
+    },
+    {
+     "said": 0.6554,
+     "happened": 0.513,
+     "rows": 731
+    },
+    {
+     "said": 0.7177,
+     "happened": 0.6227,
+     "rows": 2918
+    },
+    {
+     "said": 0.8384,
+     "happened": 0.8357,
+     "rows": 1869
+    },
+    {
+     "said": 0.9577,
+     "happened": 0.9571,
+     "rows": 4242
+    }
+   ],
+   "baseline_rule": {
+    "roc_auc": 0.7513,
+    "average_precision": 0.2669,
+    "positives": 17034,
+    "rows": 224045,
+    "prevalence": 0.076
+   },
+   "baseline_logistic_regression": {
+    "roc_auc": 0.87,
+    "average_precision": 0.6235,
+    "positives": 17034,
+    "rows": 224045,
+    "prevalence": 0.076
+   },
+   "events": {
+    "failures": 300,
+    "announced": 264,
+    "announced_share": 0.88,
+    "announced_10s_before": 248,
+    "announced_30s_before": 214,
+    "lead_s_median": 66.0,
+    "lead_s_p10": 18.0,
+    "alarms": 458,
+    "false_alarms": 235,
+    "alarm_precision": 0.4869,
+    "false_alarms_per_service_hour": 1.888,
+    "service_hours": 124.47,
+    "by_kind": {
+     "blip_cpu (affected)": {
+      "announced": 0,
+      "of": 2
+     },
+     "blip_slow (affected)": {
+      "announced": 2,
+      "of": 2
+     },
+     "calm (affected)": {
+      "announced": 1,
+      "of": 1
+     },
+     "cpu": {
+      "announced": 6,
+      "of": 6
+     },
+     "cpu (affected)": {
+      "announced": 8,
+      "of": 8
+     },
+     "crash": {
+      "announced": 0,
+      "of": 6
+     },
+     "crash (affected)": {
+      "announced": 4,
+      "of": 6
+     },
+     "errors": {
+      "announced": 6,
+      "of": 6
+     },
+     "errors (affected)": {
+      "announced": 8,
+      "of": 8
+     },
+     "leak": {
+      "announced": 10,
+      "of": 10
+     },
+     "leak (affected)": {
+      "announced": 5,
+      "of": 5
+     },
+     "leak_crash": {
+      "announced": 12,
+      "of": 12
+     },
+     "leak_crash (affected)": {
+      "announced": 21,
+      "of": 21
+     },
+     "load": {
+      "announced": 58,
+      "of": 58
+     },
+     "outage": {
+      "announced": 0,
+      "of": 10
+     },
+     "outage (affected)": {
+      "announced": 6,
+      "of": 16
+     },
+     "part_errors": {
+      "announced": 2,
+      "of": 2
+     },
+     "part_slow": {
+      "announced": 1,
+      "of": 1
+     },
+     "part_slow (affected)": {
+      "announced": 3,
+      "of": 4
+     },
+     "pool": {
+      "announced": 10,
+      "of": 10
+     },
+     "pool (affected)": {
+      "announced": 61,
+      "of": 61
+     },
+     "restart": {
+      "announced": 0,
+      "of": 1
+     },
+     "slots": {
+      "announced": 0,
+      "of": 4
+     },
+     "slots (affected)": {
+      "announced": 1,
+      "of": 1
+     },
+     "slow": {
+      "announced": 6,
+      "of": 6
+     },
+     "slow (affected)": {
+      "announced": 27,
+      "of": 27
+     },
+     "wave (affected)": {
+      "announced": 6,
+      "of": 6
+     }
+    }
+   }
+  },
+  "failure": {
+   "xgboost": {
+    "roc_auc": 0.8792,
+    "average_precision": 0.6324,
+    "positives": 14493,
+    "rows": 227239,
+    "prevalence": 0.0638,
+    "precision": 0.7103,
+    "recall": 0.5596,
+    "f1": 0.626,
+    "false_positive_rate": 0.0155,
+    "tp": 8111,
+    "fp": 3308,
+    "fn": 6382,
+    "tn": 209438,
+    "brier": 0.0353,
+    "brier_of_always_saying_the_average": 0.0597
+   },
+   "reliability": [
+    {
+     "said": 0.0355,
+     "happened": 0.0197,
+     "rows": 189699
+    },
+    {
+     "said": 0.155,
+     "happened": 0.0817,
+     "rows": 21473
+    },
+    {
+     "said": 0.2775,
+     "happened": 0.1581,
+     "rows": 2302
+    },
+    {
+     "said": 0.3299,
+     "happened": 0.2106,
+     "rows": 1961
+    },
+    {
+     "said": 0.4726,
+     "happened": 0.3469,
+     "rows": 1571
+    },
+    {
+     "said": 0.5228,
+     "happened": 0.4047,
+     "rows": 1374
+    },
+    {
+     "said": 0.6961,
+     "happened": 0.5671,
+     "rows": 2721
+    },
+    {
+     "said": 0.7739,
+     "happened": 0.7586,
+     "rows": 961
+    },
+    {
+     "said": 0.8242,
+     "happened": 0.7836,
+     "rows": 610
+    },
+    {
+     "said": 0.9685,
+     "happened": 0.9591,
+     "rows": 4567
+    }
+   ],
+   "baseline_rule": {
+    "roc_auc": 0.7388,
+    "average_precision": 0.2023,
+    "positives": 14493,
+    "rows": 227239,
+    "prevalence": 0.0638
+   },
+   "baseline_logistic_regression": {
+    "roc_auc": 0.88,
+    "average_precision": 0.6512,
+    "positives": 14493,
+    "rows": 227239,
+    "prevalence": 0.0638
+   },
+   "events": {
+    "failures": 261,
+    "announced": 237,
+    "announced_share": 0.908,
+    "announced_10s_before": 222,
+    "announced_30s_before": 198,
+    "lead_s_median": 72.0,
+    "lead_s_p10": 21.2,
+    "alarms": 461,
+    "false_alarms": 258,
+    "alarm_precision": 0.4403,
+    "false_alarms_per_service_hour": 2.0437,
+    "service_hours": 126.24,
+    "by_kind": {
+     "blip_slow (affected)": {
+      "announced": 1,
+      "of": 1
+     },
+     "cpu": {
+      "announced": 1,
+      "of": 1
+     },
+     "cpu (affected)": {
+      "announced": 5,
+      "of": 5
+     },
+     "crash": {
+      "announced": 0,
+      "of": 6
+     },
+     "crash (affected)": {
+      "announced": 5,
+      "of": 6
+     },
+     "errors": {
+      "announced": 6,
+      "of": 6
+     },
+     "errors (affected)": {
+      "announced": 8,
+      "of": 8
+     },
+     "leak": {
+      "announced": 10,
+      "of": 10
+     },
+     "leak (affected)": {
+      "announced": 5,
+      "of": 5
+     },
+     "leak_crash": {
+      "announced": 12,
+      "of": 12
+     },
+     "leak_crash (affected)": {
+      "announced": 21,
+      "of": 21
+     },
+     "load": {
+      "announced": 57,
+      "of": 57
+     },
+     "outage": {
+      "announced": 0,
+      "of": 10
+     },
+     "outage (affected)": {
+      "announced": 9,
+      "of": 16
+     },
+     "part_errors": {
+      "announced": 1,
+      "of": 1
+     },
+     "pool": {
+      "announced": 10,
+      "of": 10
+     },
+     "pool (affected)": {
+      "announced": 60,
+      "of": 60
+     },
+     "slow (affected)": {
+      "announced": 26,
+      "of": 26
+     }
+    }
+   }
+  }
+ },
+ "development_test": {
+  "test": {
+   "anomaly": {
+    "isolation_forest": {
+     "roc_auc": 0.9348,
+     "average_precision": 0.8907,
+     "positives": 24696,
+     "rows": 166912,
+     "prevalence": 0.148,
+     "precision": 0.9828,
+     "recall": 0.7008,
+     "f1": 0.8182,
+     "false_positive_rate": 0.0021,
+     "tp": 17308,
+     "fp": 303,
+     "fn": 7388,
+     "tn": 141913
+    },
+    "baseline_largest_deviation": {
+     "roc_auc": 0.928,
+     "average_precision": 0.8756,
+     "positives": 24696,
+     "rows": 166912,
+     "prevalence": 0.148
+    },
+    "disturbances_noticed": {
+     "blip_cpu": {
+      "noticed": 8,
+      "of": 12
+     },
+     "blip_slow": {
+      "noticed": 5,
+      "of": 13
+     },
+     "cpu": {
+      "noticed": 17,
+      "of": 17
+     },
+     "errors": {
+      "noticed": 9,
+      "of": 9
+     },
+     "leak": {
+      "noticed": 14,
+      "of": 14
+     },
+     "leak_crash": {
+      "noticed": 10,
+      "of": 10
+     },
+     "load": {
+      "noticed": 24,
+      "of": 28
+     },
+     "part_cpu": {
+      "noticed": 10,
+      "of": 11
+     },
+     "part_errors": {
+      "noticed": 7,
+      "of": 11
+     },
+     "part_leak": {
+      "noticed": 16,
+      "of": 16
+     },
+     "part_pool": {
+      "noticed": 0,
+      "of": 12
+     },
+     "part_slow": {
+      "noticed": 7,
+      "of": 10
+     },
+     "pool": {
+      "noticed": 18,
+      "of": 19
+     },
+     "slots": {
+      "noticed": 10,
+      "of": 14
+     },
+     "slow": {
+      "noticed": 14,
+      "of": 15
+     }
+    },
+    "noticed_by_kind": {
+     "blip_cpu": {
+      "moments": 77,
+      "noticed": 0.506
+     },
+     "blip_slow": {
+      "moments": 87,
+      "noticed": 0.264
+     },
+     "cpu": {
+      "moments": 1336,
+      "noticed": 0.972
+     },
+     "errors": {
+      "moments": 578,
+      "noticed": 0.649
+     },
+     "leak": {
+      "moments": 1168,
+      "noticed": 0.991
+     },
+     "leak_crash": {
+      "moments": 466,
+      "noticed": 0.976
+     },
+     "load": {
+      "moments": 15061,
+      "noticed": 0.707
+     },
+     "part_cpu": {
+      "moments": 402,
+      "noticed": 0.856
+     },
+     "part_errors": {
+      "moments": 489,
+      "noticed": 0.526
+     },
+     "part_leak": {
+      "moments": 622,
+      "noticed": 0.963
+     },
+     "part_pool": {
+      "moments": 586,
+      "noticed": 0.0
+     },
+     "part_slow": {
+      "moments": 476,
+      "noticed": 0.616
+     },
+     "pool": {
+      "moments": 1185,
+      "noticed": 0.591
+     },
+     "slots": {
+      "moments": 1056,
+      "noticed": 0.129
+     },
+     "slow": {
+      "moments": 1107,
+      "noticed": 0.882
+     }
+    },
+    "condition_named_correctly": 0.95,
+    "named": {
+     "cpu": {
+      "resources": 120
+     },
+     "leak": {
+      "resources": 120
+     },
+     "leak_crash": {
+      "resources": 120
+     },
+     "slow": {
+      "latency": 120
+     },
+     "pool": {
+      "database": 98,
+      "latency": 18,
+      "traffic": 4
+     },
+     "errors": {
+      "errors": 120
+     },
+     "load": {
+      "traffic": 65,
+      "database": 31,
+      "latency": 10,
+      "errors": 7,
+      "resources": 4,
+      "connections": 3
+     }
+    }
+   },
+   "degradation": {
+    "xgboost": {
+     "roc_auc": 0.8392,
+     "average_precision": 0.5416,
+     "positives": 26652,
+     "rows": 365492,
+     "prevalence": 0.0729,
+     "precision": 0.7419,
+     "recall": 0.3924,
+     "f1": 0.5133,
+     "false_positive_rate": 0.0107,
+     "tp": 10459,
+     "fp": 3639,
+     "fn": 16193,
+     "tn": 335201,
+     "brier": 0.0455,
+     "brier_of_always_saying_the_average": 0.0676
+    },
+    "reliability": [
+     {
+      "said": 0.0291,
+      "happened": 0.0303,
+      "rows": 316884
+     },
+     {
+      "said": 0.1272,
+      "happened": 0.1277,
+      "rows": 19090
+     },
+     {
+      "said": 0.2195,
+      "happened": 0.2242,
+      "rows": 9327
+     },
+     {
+      "said": 0.3444,
+      "happened": 0.2998,
+      "rows": 3619
+     },
+     {
+      "said": 0.4508,
+      "happened": 0.3995,
+      "rows": 2951
+     },
+     {
+      "said": 0.5199,
+      "happened": 0.4475,
+      "rows": 1687
+     },
+     {
+      "said": 0.6556,
+      "happened": 0.5794,
+      "rows": 825
+     },
+     {
+      "said": 0.7185,
+      "happened": 0.6733,
+      "rows": 3817
+     },
+     {
+      "said": 0.839,
+      "happened": 0.7975,
+      "rows": 1965
+     },
+     {
+      "said": 0.9602,
+      "happened": 0.9178,
+      "rows": 5327
+     }
+    ],
+    "baseline_rule": {
+     "roc_auc": 0.6797,
+     "average_precision": 0.1955,
+     "positives": 26652,
+     "rows": 365492,
+     "prevalence": 0.0729
+    },
+    "baseline_logistic_regression": {
+     "roc_auc": 0.8402,
+     "average_precision": 0.543,
+     "positives": 26652,
+     "rows": 365492,
+     "prevalence": 0.0729
+    },
+    "events": {
+     "failures": 460,
+     "announced": 405,
+     "announced_share": 0.8804,
+     "announced_10s_before": 389,
+     "announced_30s_before": 322,
+     "lead_s_median": 46.0,
+     "lead_s_p10": 20.0,
+     "alarms": 616,
+     "false_alarms": 214,
+     "alarm_precision": 0.6526,
+     "false_alarms_per_service_hour": 1.0539,
+     "service_hours": 203.05,
+     "by_kind": {
+      "cpu": {
+       "announced": 17,
+       "of": 17
+      },
+      "cpu (affected)": {
+       "announced": 14,
+       "of": 14
+      },
+      "crash": {
+       "announced": 0,
+       "of": 6
+      },
+      "crash (affected)": {
+       "announced": 4,
+       "of": 10
+      },
+      "errors": {
+       "announced": 9,
+       "of": 9
+      },
+      "errors (affected)": {
+       "announced": 9,
+       "of": 9
+      },
+      "leak": {
+       "announced": 14,
+       "of": 14
+      },
+      "leak (affected)": {
+       "announced": 27,
+       "of": 27
+      },
+      "leak_crash": {
+       "announced": 10,
+       "of": 10
+      },
+      "leak_crash (affected)": {
+       "announced": 7,
+       "of": 7
+      },
+      "load": {
+       "announced": 144,
+       "of": 144
+      },
+      "outage": {
+       "announced": 0,
+       "of": 10
+      },
+      "outage (affected)": {
+       "announced": 5,
+       "of": 24
+      },
+      "part_errors": {
+       "announced": 6,
+       "of": 6
+      },
+      "part_errors (affected)": {
+       "announced": 6,
+       "of": 6
+      },
+      "part_slow": {
+       "announced": 1,
+       "of": 1
+      },
+      "part_slow (affected)": {
+       "announced": 3,
+       "of": 3
+      },
+      "pool": {
+       "announced": 18,
+       "of": 18
+      },
+      "pool (affected)": {
+       "announced": 108,
+       "of": 108
+      },
+      "slots": {
+       "announced": 1,
+       "of": 14
+      },
+      "slow": {
+       "announced": 0,
+       "of": 1
+      },
+      "slow (affected)": {
+       "announced": 2,
+       "of": 2
+      }
+     }
+    }
+   },
+   "failure": {
+    "xgboost": {
+     "roc_auc": 0.8516,
+     "average_precision": 0.5585,
+     "positives": 23556,
+     "rows": 368650,
+     "prevalence": 0.0639,
+     "precision": 0.7182,
+     "recall": 0.4587,
+     "f1": 0.5598,
+     "false_positive_rate": 0.0123,
+     "tp": 10804,
+     "fp": 4239,
+     "fn": 12752,
+     "tn": 340855,
+     "brier": 0.0383,
+     "brier_of_always_saying_the_average": 0.0598
+    },
+    "reliability": [
+     {
+      "said": 0.0262,
+      "happened": 0.0255,
+      "rows": 333744
+     },
+     {
+      "said": 0.1591,
+      "happened": 0.1867,
+      "rows": 13908
+     },
+     {
+      "said": 0.279,
+      "happened": 0.2315,
+      "rows": 2670
+     },
+     {
+      "said": 0.3305,
+      "happened": 0.3051,
+      "rows": 2720
+     },
+     {
+      "said": 0.4734,
+      "happened": 0.3909,
+      "rows": 2425
+     },
+     {
+      "said": 0.5222,
+      "happened": 0.4693,
+      "rows": 1794
+     },
+     {
+      "said": 0.6965,
+      "happened": 0.6614,
+      "rows": 3346
+     },
+     {
+      "said": 0.7738,
+      "happened": 0.8203,
+      "rows": 1096
+     },
+     {
+      "said": 0.8248,
+      "happened": 0.7983,
+      "rows": 709
+     },
+     {
+      "said": 0.9711,
+      "happened": 0.8876,
+      "rows": 6238
+     }
+    ],
+    "baseline_rule": {
+     "roc_auc": 0.6784,
+     "average_precision": 0.1774,
+     "positives": 23556,
+     "rows": 368650,
+     "prevalence": 0.0639
+    },
+    "baseline_logistic_regression": {
+     "roc_auc": 0.8573,
+     "average_precision": 0.5676,
+     "positives": 23556,
+     "rows": 368650,
+     "prevalence": 0.0639
+    },
+    "events": {
+     "failures": 423,
+     "announced": 392,
+     "announced_share": 0.9267,
+     "announced_10s_before": 366,
+     "announced_30s_before": 342,
+     "lead_s_median": 54.0,
+     "lead_s_p10": 24.0,
+     "alarms": 637,
+     "false_alarms": 248,
+     "alarm_precision": 0.6107,
+     "false_alarms_per_service_hour": 1.2109,
+     "service_hours": 204.81,
+     "by_kind": {
+      "cpu": {
+       "announced": 2,
+       "of": 2
+      },
+      "cpu (affected)": {
+       "announced": 14,
+       "of": 14
+      },
+      "crash": {
+       "announced": 0,
+       "of": 6
+      },
+      "crash (affected)": {
+       "announced": 7,
+       "of": 10
+      },
+      "errors": {
+       "announced": 9,
+       "of": 9
+      },
+      "errors (affected)": {
+       "announced": 9,
+       "of": 9
+      },
+      "leak": {
+       "announced": 14,
+       "of": 14
+      },
+      "leak (affected)": {
+       "announced": 27,
+       "of": 27
+      },
+      "leak_crash": {
+       "announced": 10,
+       "of": 10
+      },
+      "leak_crash (affected)": {
+       "announced": 7,
+       "of": 7
+      },
+      "load": {
+       "announced": 138,
+       "of": 139
+      },
+      "outage": {
+       "announced": 0,
+       "of": 10
+      },
+      "outage (affected)": {
+       "announced": 13,
+       "of": 24
+      },
+      "part_errors": {
+       "announced": 6,
+       "of": 6
+      },
+      "part_errors (affected)": {
+       "announced": 6,
+       "of": 6
+      },
+      "part_slow (affected)": {
+       "announced": 2,
+       "of": 2
+      },
+      "pool": {
+       "announced": 18,
+       "of": 18
+      },
+      "pool (affected)": {
+       "announced": 108,
+       "of": 108
+      },
+      "slow (affected)": {
+       "announced": 2,
+       "of": 2
+      }
+     }
+    }
+   }
+  },
+  "shifted": {
+   "anomaly": {
+    "isolation_forest": {
+     "roc_auc": 0.9354,
+     "average_precision": 0.8641,
+     "positives": 10082,
+     "rows": 99394,
+     "prevalence": 0.1014,
+     "precision": 0.8384,
+     "recall": 0.7944,
+     "f1": 0.8158,
+     "false_positive_rate": 0.0173,
+     "tp": 8009,
+     "fp": 1544,
+     "fn": 2073,
+     "tn": 87768
+    },
+    "baseline_largest_deviation": {
+     "roc_auc": 0.9232,
+     "average_precision": 0.8635,
+     "positives": 10082,
+     "rows": 99394,
+     "prevalence": 0.1014
+    },
+    "disturbances_noticed": {
+     "blip_cpu": {
+      "noticed": 7,
+      "of": 7
+     },
+     "blip_slow": {
+      "noticed": 4,
+      "of": 6
+     },
+     "cpu": {
+      "noticed": 12,
+      "of": 12
+     },
+     "errors": {
+      "noticed": 11,
+      "of": 11
+     },
+     "leak": {
+      "noticed": 15,
+      "of": 15
+     },
+     "leak_crash": {
+      "noticed": 12,
+      "of": 12
+     },
+     "load": {
+      "noticed": 7,
+      "of": 7
+     },
+     "part_cpu": {
+      "noticed": 2,
+      "of": 2
+     },
+     "part_errors": {
+      "noticed": 2,
+      "of": 2
+     },
+     "part_leak": {
+      "noticed": 4,
+      "of": 4
+     },
+     "part_pool": {
+      "noticed": 1,
+      "of": 8
+     },
+     "part_slow": {
+      "noticed": 6,
+      "of": 6
+     },
+     "pool": {
+      "noticed": 5,
+      "of": 5
+     },
+     "slots": {
+      "noticed": 14,
+      "of": 16
+     },
+     "slow": {
+      "noticed": 8,
+      "of": 8
+     }
+    },
+    "noticed_by_kind": {
+     "blip_cpu": {
+      "moments": 54,
+      "noticed": 0.722
+     },
+     "blip_slow": {
+      "moments": 42,
+      "noticed": 0.524
+     },
+     "cpu": {
+      "moments": 569,
+      "noticed": 0.989
+     },
+     "errors": {
+      "moments": 989,
+      "noticed": 0.815
+     },
+     "leak": {
+      "moments": 929,
+      "noticed": 0.99
+     },
+     "leak_crash": {
+      "moments": 853,
+      "noticed": 0.992
+     },
+     "load": {
+      "moments": 3448,
+      "noticed": 0.961
+     },
+     "part_cpu": {
+      "moments": 76,
+      "noticed": 1.0
+     },
+     "part_errors": {
+      "moments": 129,
+      "noticed": 0.659
+     },
+     "part_leak": {
+      "moments": 88,
+      "noticed": 1.0
+     },
+     "part_pool": {
+      "moments": 274,
+      "noticed": 0.128
+     },
+     "part_slow": {
+      "moments": 304,
+      "noticed": 1.0
+     },
+     "pool": {
+      "moments": 344,
+      "noticed": 0.491
+     },
+     "slots": {
+      "moments": 1487,
+      "noticed": 0.166
+     },
+     "slow": {
+      "moments": 496,
+      "noticed": 1.0
+     }
+    },
+    "condition_named_correctly": 0.97,
+    "named": {
+     "cpu": {
+      "resources": 120
+     },
+     "leak": {
+      "resources": 107,
+      "errors": 13
+     },
+     "leak_crash": {
+      "resources": 120
+     },
+     "slow": {
+      "latency": 120
+     },
+     "pool": {
+      "database": 115,
+      "latency": 5
+     },
+     "errors": {
+      "errors": 120
+     },
+     "load": {
+      "traffic": 67,
+      "database": 14,
+      "resources": 11,
+      "connections": 11,
+      "errors": 11,
+      "latency": 6
+     }
+    }
+   },
+   "degradation": {
+    "xgboost": {
+     "roc_auc": 0.8469,
+     "average_precision": 0.5199,
+     "positives": 13237,
+     "rows": 224914,
+     "prevalence": 0.0589,
+     "precision": 0.6593,
+     "recall": 0.4509,
+     "f1": 0.5356,
+     "false_positive_rate": 0.0146,
+     "tp": 5969,
+     "fp": 3084,
+     "fn": 7268,
+     "tn": 208593,
+     "brier": 0.0409,
+     "brier_of_always_saying_the_average": 0.0554
+    },
+    "reliability": [
+     {
+      "said": 0.0358,
+      "happened": 0.0186,
+      "rows": 166685
+     },
+     {
+      "said": 0.1337,
+      "happened": 0.0515,
+      "rows": 27094
+     },
+     {
+      "said": 0.2175,
+      "happened": 0.1,
+      "rows": 15936
+     },
+     {
+      "said": 0.3418,
+      "happened": 0.1576,
+      "rows": 3865
+     },
+     {
+      "said": 0.4498,
+      "happened": 0.2713,
+      "rows": 2713
+     },
+     {
+      "said": 0.5203,
+      "happened": 0.4078,
+      "rows": 1714
+     },
+     {
+      "said": 0.6548,
+      "happened": 0.5316,
+      "rows": 997
+     },
+     {
+      "said": 0.7165,
+      "happened": 0.654,
+      "rows": 2812
+     },
+     {
+      "said": 0.8356,
+      "happened": 0.7903,
+      "rows": 1049
+     },
+     {
+      "said": 0.9535,
+      "happened": 0.9336,
+      "rows": 2049
+     }
+    ],
+    "baseline_rule": {
+     "roc_auc": 0.7622,
+     "average_precision": 0.221,
+     "positives": 13237,
+     "rows": 224914,
+     "prevalence": 0.0589
+    },
+    "baseline_logistic_regression": {
+     "roc_auc": 0.8497,
+     "average_precision": 0.5384,
+     "positives": 13237,
+     "rows": 224914,
+     "prevalence": 0.0589
+    },
+    "events": {
+     "failures": 233,
+     "announced": 200,
+     "announced_share": 0.8584,
+     "announced_10s_before": 186,
+     "announced_30s_before": 152,
+     "lead_s_median": 58.0,
+     "lead_s_p10": 18.0,
+     "alarms": 399,
+     "false_alarms": 217,
+     "alarm_precision": 0.4561,
+     "false_alarms_per_service_hour": 1.7367,
+     "service_hours": 124.95,
+     "by_kind": {
+      "blip_cpu": {
+       "announced": 1,
+       "of": 1
+      },
+      "blip_cpu (affected)": {
+       "announced": 3,
+       "of": 4
+      },
+      "blip_slow (affected)": {
+       "announced": 1,
+       "of": 1
+      },
+      "cpu": {
+       "announced": 12,
+       "of": 12
+      },
+      "cpu (affected)": {
+       "announced": 3,
+       "of": 3
+      },
+      "crash": {
+       "announced": 0,
+       "of": 2
+      },
+      "crash (affected)": {
+       "announced": 0,
+       "of": 2
+      },
+      "errors": {
+       "announced": 10,
+       "of": 10
+      },
+      "errors (affected)": {
+       "announced": 13,
+       "of": 13
+      },
+      "leak": {
+       "announced": 15,
+       "of": 15
+      },
+      "leak (affected)": {
+       "announced": 7,
+       "of": 7
+      },
+      "leak_crash": {
+       "announced": 11,
+       "of": 11
+      },
+      "leak_crash (affected)": {
+       "announced": 20,
+       "of": 20
+      },
+      "load": {
+       "announced": 47,
+       "of": 49
+      },
+      "outage": {
+       "announced": 0,
+       "of": 5
+      },
+      "outage (affected)": {
+       "announced": 3,
+       "of": 9
+      },
+      "part_errors": {
+       "announced": 2,
+       "of": 2
+      },
+      "part_errors (affected)": {
+       "announced": 2,
+       "of": 2
+      },
+      "part_pool (affected)": {
+       "announced": 1,
+       "of": 1
+      },
+      "part_slow (affected)": {
+       "announced": 4,
+       "of": 4
+      },
+      "pool": {
+       "announced": 4,
+       "of": 4
+      },
+      "pool (affected)": {
+       "announced": 24,
+       "of": 24
+      },
+      "slots": {
+       "announced": 3,
+       "of": 13
+      },
+      "slots (affected)": {
+       "announced": 2,
+       "of": 5
+      },
+      "slow": {
+       "announced": 3,
+       "of": 3
+      },
+      "slow (affected)": {
+       "announced": 5,
+       "of": 5
+      },
+      "wave": {
+       "announced": 1,
+       "of": 1
+      },
+      "wave (affected)": {
+       "announced": 3,
+       "of": 5
+      }
+     }
+    }
+   },
+   "failure": {
+    "xgboost": {
+     "roc_auc": 0.8644,
+     "average_precision": 0.5669,
+     "positives": 10506,
+     "rows": 227136,
+     "prevalence": 0.0463,
+     "precision": 0.6568,
+     "recall": 0.5369,
+     "f1": 0.5909,
+     "false_positive_rate": 0.0136,
+     "tp": 5641,
+     "fp": 2947,
+     "fn": 4865,
+     "tn": 213683,
+     "brier": 0.0291,
+     "brier_of_always_saying_the_average": 0.0441
+    },
+    "reliability": [
+     {
+      "said": 0.0348,
+      "happened": 0.0157,
+      "rows": 192117
+     },
+     {
+      "said": 0.1555,
+      "happened": 0.0502,
+      "rows": 22435
+     },
+     {
+      "said": 0.2777,
+      "happened": 0.1433,
+      "rows": 2115
+     },
+     {
+      "said": 0.33,
+      "happened": 0.211,
+      "rows": 1540
+     },
+     {
+      "said": 0.4737,
+      "happened": 0.3016,
+      "rows": 1575
+     },
+     {
+      "said": 0.5243,
+      "happened": 0.4534,
+      "rows": 1610
+     },
+     {
+      "said": 0.6948,
+      "happened": 0.6435,
+      "rows": 2536
+     },
+     {
+      "said": 0.7739,
+      "happened": 0.762,
+      "rows": 542
+     },
+     {
+      "said": 0.8241,
+      "happened": 0.8179,
+      "rows": 313
+     },
+     {
+      "said": 0.966,
+      "happened": 0.946,
+      "rows": 2353
+     }
+    ],
+    "baseline_rule": {
+     "roc_auc": 0.7549,
+     "average_precision": 0.1645,
+     "positives": 10506,
+     "rows": 227136,
+     "prevalence": 0.0463
+    },
+    "baseline_logistic_regression": {
+     "roc_auc": 0.8661,
+     "average_precision": 0.5863,
+     "positives": 10506,
+     "rows": 227136,
+     "prevalence": 0.0463
+    },
+    "events": {
+     "failures": 192,
+     "announced": 178,
+     "announced_share": 0.9271,
+     "announced_10s_before": 170,
+     "announced_30s_before": 153,
+     "lead_s_median": 66.0,
+     "lead_s_p10": 23.4,
+     "alarms": 368,
+     "false_alarms": 206,
+     "alarm_precision": 0.4402,
+     "false_alarms_per_service_hour": 1.6325,
+     "service_hours": 126.19,
+     "by_kind": {
+      "cpu": {
+       "announced": 2,
+       "of": 2
+      },
+      "cpu (affected)": {
+       "announced": 3,
+       "of": 3
+      },
+      "crash": {
+       "announced": 0,
+       "of": 2
+      },
+      "crash (affected)": {
+       "announced": 0,
+       "of": 2
+      },
+      "errors": {
+       "announced": 10,
+       "of": 10
+      },
+      "errors (affected)": {
+       "announced": 13,
+       "of": 13
+      },
+      "leak": {
+       "announced": 15,
+       "of": 15
+      },
+      "leak (affected)": {
+       "announced": 7,
+       "of": 7
+      },
+      "leak_crash": {
+       "announced": 11,
+       "of": 11
+      },
+      "leak_crash (affected)": {
+       "announced": 20,
+       "of": 20
+      },
+      "load": {
+       "announced": 54,
+       "of": 54
+      },
+      "outage": {
+       "announced": 0,
+       "of": 5
+      },
+      "outage (affected)": {
+       "announced": 4,
+       "of": 9
+      },
+      "part_errors": {
+       "announced": 2,
+       "of": 2
+      },
+      "part_errors (affected)": {
+       "announced": 2,
+       "of": 2
+      },
+      "part_slow (affected)": {
+       "announced": 3,
+       "of": 3
+      },
+      "pool": {
+       "announced": 4,
+       "of": 4
+      },
+      "pool (affected)": {
+       "announced": 24,
+       "of": 24
+      },
+      "slow (affected)": {
+       "announced": 4,
+       "of": 4
+      }
+     }
+    }
+   }
+  }
+ },
+ "tested_at": "2026-11-25T17:01:39+00:00"
+}

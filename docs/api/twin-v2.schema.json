@@ -1,6 +1,87 @@
 {
   "TwinView": {
     "$defs": {
+      "AnomalyContribution": {
+        "properties": {
+          "metric": {
+            "title": "Metric",
+            "type": "string"
+          },
+          "share": {
+            "description": "Part of the anomaly score it explains",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Share",
+            "type": "number"
+          },
+          "deviation": {
+            "description": "Distance from normal, in units of the normal spread",
+            "title": "Deviation",
+            "type": "number"
+          }
+        },
+        "required": [
+          "metric",
+          "share",
+          "deviation"
+        ],
+        "title": "AnomalyContribution",
+        "type": "object"
+      },
+      "AnomalyView": {
+        "description": "Isolation Forest, unsupervised: how unusual this moment is. Says nothing about the future.",
+        "properties": {
+          "score": {
+            "description": "0.5 is the threshold",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Score",
+            "type": "number"
+          },
+          "level": {
+            "enum": [
+              "normal",
+              "unusual",
+              "abnormal"
+            ],
+            "title": "Level",
+            "type": "string"
+          },
+          "condition": {
+            "title": "Condition",
+            "type": "string"
+          },
+          "since": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the anomaly was confirmed; null if it is not",
+            "title": "Since"
+          },
+          "contributions": {
+            "items": {
+              "$ref": "#/$defs/AnomalyContribution"
+            },
+            "title": "Contributions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "score",
+          "level",
+          "condition",
+          "since",
+          "contributions"
+        ],
+        "title": "AnomalyView",
+        "type": "object"
+      },
       "ComponentDisplay": {
         "properties": {
           "layer": {
@@ -162,6 +243,17 @@
           "dependencies": {
             "$ref": "#/$defs/Dependencies"
           },
+          "insight": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/InsightView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opinion of the AI service; null if none"
+          },
           "display": {
             "$ref": "#/$defs/ComponentDisplay"
           }
@@ -182,6 +274,7 @@
           "data_quality",
           "attributes",
           "dependencies",
+          "insight",
           "display"
         ],
         "title": "ComponentView",
@@ -313,6 +406,73 @@
         "title": "FindingView",
         "type": "object"
       },
+      "InsightView": {
+        "description": "What the AI service thinks. Never part of the status.",
+        "properties": {
+          "assessed_at": {
+            "format": "date-time",
+            "title": "Assessed At",
+            "type": "string"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "anomaly": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/AnomalyView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "anomaly_reason": {
+            "description": "Why there is no anomaly score",
+            "title": "Anomaly Reason",
+            "type": "string"
+          },
+          "risks": {
+            "items": {
+              "$ref": "#/$defs/RiskView"
+            },
+            "title": "Risks",
+            "type": "array"
+          },
+          "risk_reason": {
+            "description": "Why there is no prediction",
+            "title": "Risk Reason",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/$defs/PredictiveWarning"
+            },
+            "title": "Warnings",
+            "type": "array"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/$defs/RiskReason"
+            },
+            "title": "Reasons",
+            "type": "array"
+          }
+        },
+        "required": [
+          "assessed_at",
+          "model",
+          "anomaly",
+          "anomaly_reason",
+          "risks",
+          "risk_reason",
+          "warnings",
+          "reasons"
+        ],
+        "title": "InsightView",
+        "type": "object"
+      },
       "LinkDisplay": {
         "properties": {
           "flow": {
@@ -441,6 +601,128 @@
         "title": "LinkView",
         "type": "object"
       },
+      "PredictiveWarning": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "target": {
+            "enum": [
+              "degradation",
+              "failure"
+            ],
+            "title": "Target",
+            "type": "string"
+          },
+          "probability": {
+            "description": "When the warning opened",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Probability",
+            "type": "number"
+          },
+          "peak": {
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Peak",
+            "type": "number"
+          },
+          "opened_at": {
+            "format": "date-time",
+            "title": "Opened At",
+            "type": "string"
+          },
+          "horizon_s": {
+            "title": "Horizon S",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "target",
+          "probability",
+          "peak",
+          "opened_at",
+          "horizon_s"
+        ],
+        "title": "PredictiveWarning",
+        "type": "object"
+      },
+      "RiskReason": {
+        "properties": {
+          "metric": {
+            "title": "Metric",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "contribution": {
+            "description": "Log-odds; positive raises the risk",
+            "title": "Contribution",
+            "type": "number"
+          }
+        },
+        "required": [
+          "metric",
+          "text",
+          "contribution"
+        ],
+        "title": "RiskReason",
+        "type": "object"
+      },
+      "RiskView": {
+        "description": "XGBoost, supervised: probability that the target occurs within the horizon. Calibrated on\nsynthetic data.",
+        "properties": {
+          "target": {
+            "enum": [
+              "degradation",
+              "failure"
+            ],
+            "title": "Target",
+            "type": "string"
+          },
+          "probability": {
+            "anyOf": [
+              {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null: present or just over",
+            "title": "Probability"
+          },
+          "level": {
+            "enum": [
+              "low",
+              "elevated",
+              "high",
+              "present",
+              "recovering"
+            ],
+            "title": "Level",
+            "type": "string"
+          },
+          "horizon_s": {
+            "title": "Horizon S",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "target",
+          "probability",
+          "level",
+          "horizon_s"
+        ],
+        "title": "RiskView",
+        "type": "object"
+      },
       "Status": {
         "enum": [
           "healthy",
@@ -498,6 +780,31 @@
             },
             "title": "Needs Attention",
             "type": "array"
+          },
+          "ai": {
+            "description": "Does the AI service report?",
+            "enum": [
+              "live",
+              "absent"
+            ],
+            "title": "Ai",
+            "type": "string"
+          },
+          "anomalies": {
+            "description": "Ids with a confirmed anomaly",
+            "items": {
+              "type": "string"
+            },
+            "title": "Anomalies",
+            "type": "array"
+          },
+          "predicted": {
+            "description": "Ids with a predictive warning",
+            "items": {
+              "type": "string"
+            },
+            "title": "Predicted",
+            "type": "array"
           }
         },
         "required": [
@@ -507,7 +814,10 @@
           "by_type",
           "links",
           "links_failed",
-          "needs_attention"
+          "needs_attention",
+          "ai",
+          "anomalies",
+          "predicted"
         ],
         "title": "Summary",
         "type": "object"
@@ -628,6 +938,87 @@
   },
   "TwinMessage": {
     "$defs": {
+      "AnomalyContribution": {
+        "properties": {
+          "metric": {
+            "title": "Metric",
+            "type": "string"
+          },
+          "share": {
+            "description": "Part of the anomaly score it explains",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Share",
+            "type": "number"
+          },
+          "deviation": {
+            "description": "Distance from normal, in units of the normal spread",
+            "title": "Deviation",
+            "type": "number"
+          }
+        },
+        "required": [
+          "metric",
+          "share",
+          "deviation"
+        ],
+        "title": "AnomalyContribution",
+        "type": "object"
+      },
+      "AnomalyView": {
+        "description": "Isolation Forest, unsupervised: how unusual this moment is. Says nothing about the future.",
+        "properties": {
+          "score": {
+            "description": "0.5 is the threshold",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Score",
+            "type": "number"
+          },
+          "level": {
+            "enum": [
+              "normal",
+              "unusual",
+              "abnormal"
+            ],
+            "title": "Level",
+            "type": "string"
+          },
+          "condition": {
+            "title": "Condition",
+            "type": "string"
+          },
+          "since": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the anomaly was confirmed; null if it is not",
+            "title": "Since"
+          },
+          "contributions": {
+            "items": {
+              "$ref": "#/$defs/AnomalyContribution"
+            },
+            "title": "Contributions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "score",
+          "level",
+          "condition",
+          "since",
+          "contributions"
+        ],
+        "title": "AnomalyView",
+        "type": "object"
+      },
       "ComponentDisplay": {
         "properties": {
           "layer": {
@@ -789,6 +1180,17 @@
           "dependencies": {
             "$ref": "#/$defs/Dependencies"
           },
+          "insight": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/InsightView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opinion of the AI service; null if none"
+          },
           "display": {
             "$ref": "#/$defs/ComponentDisplay"
           }
@@ -809,6 +1211,7 @@
           "data_quality",
           "attributes",
           "dependencies",
+          "insight",
           "display"
         ],
         "title": "ComponentView",
@@ -940,6 +1343,73 @@
         "title": "FindingView",
         "type": "object"
       },
+      "InsightView": {
+        "description": "What the AI service thinks. Never part of the status.",
+        "properties": {
+          "assessed_at": {
+            "format": "date-time",
+            "title": "Assessed At",
+            "type": "string"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "anomaly": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/AnomalyView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "anomaly_reason": {
+            "description": "Why there is no anomaly score",
+            "title": "Anomaly Reason",
+            "type": "string"
+          },
+          "risks": {
+            "items": {
+              "$ref": "#/$defs/RiskView"
+            },
+            "title": "Risks",
+            "type": "array"
+          },
+          "risk_reason": {
+            "description": "Why there is no prediction",
+            "title": "Risk Reason",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/$defs/PredictiveWarning"
+            },
+            "title": "Warnings",
+            "type": "array"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/$defs/RiskReason"
+            },
+            "title": "Reasons",
+            "type": "array"
+          }
+        },
+        "required": [
+          "assessed_at",
+          "model",
+          "anomaly",
+          "anomaly_reason",
+          "risks",
+          "risk_reason",
+          "warnings",
+          "reasons"
+        ],
+        "title": "InsightView",
+        "type": "object"
+      },
       "LinkDisplay": {
         "properties": {
           "flow": {
@@ -1068,6 +1538,128 @@
         "title": "LinkView",
         "type": "object"
       },
+      "PredictiveWarning": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "target": {
+            "enum": [
+              "degradation",
+              "failure"
+            ],
+            "title": "Target",
+            "type": "string"
+          },
+          "probability": {
+            "description": "When the warning opened",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Probability",
+            "type": "number"
+          },
+          "peak": {
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Peak",
+            "type": "number"
+          },
+          "opened_at": {
+            "format": "date-time",
+            "title": "Opened At",
+            "type": "string"
+          },
+          "horizon_s": {
+            "title": "Horizon S",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "target",
+          "probability",
+          "peak",
+          "opened_at",
+          "horizon_s"
+        ],
+        "title": "PredictiveWarning",
+        "type": "object"
+      },
+      "RiskReason": {
+        "properties": {
+          "metric": {
+            "title": "Metric",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "contribution": {
+            "description": "Log-odds; positive raises the risk",
+            "title": "Contribution",
+            "type": "number"
+          }
+        },
+        "required": [
+          "metric",
+          "text",
+          "contribution"
+        ],
+        "title": "RiskReason",
+        "type": "object"
+      },
+      "RiskView": {
+        "description": "XGBoost, supervised: probability that the target occurs within the horizon. Calibrated on\nsynthetic data.",
+        "properties": {
+          "target": {
+            "enum": [
+              "degradation",
+              "failure"
+            ],
+            "title": "Target",
+            "type": "string"
+          },
+          "probability": {
+            "anyOf": [
+              {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null: present or just over",
+            "title": "Probability"
+          },
+          "level": {
+            "enum": [
+              "low",
+              "elevated",
+              "high",
+              "present",
+              "recovering"
+            ],
+            "title": "Level",
+            "type": "string"
+          },
+          "horizon_s": {
+            "title": "Horizon S",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "target",
+          "probability",
+          "level",
+          "horizon_s"
+        ],
+        "title": "RiskView",
+        "type": "object"
+      },
       "Status": {
         "enum": [
           "healthy",
@@ -1125,6 +1717,31 @@
             },
             "title": "Needs Attention",
             "type": "array"
+          },
+          "ai": {
+            "description": "Does the AI service report?",
+            "enum": [
+              "live",
+              "absent"
+            ],
+            "title": "Ai",
+            "type": "string"
+          },
+          "anomalies": {
+            "description": "Ids with a confirmed anomaly",
+            "items": {
+              "type": "string"
+            },
+            "title": "Anomalies",
+            "type": "array"
+          },
+          "predicted": {
+            "description": "Ids with a predictive warning",
+            "items": {
+              "type": "string"
+            },
+            "title": "Predicted",
+            "type": "array"
           }
         },
         "required": [
@@ -1134,7 +1751,10 @@
           "by_type",
           "links",
           "links_failed",
-          "needs_attention"
+          "needs_attention",
+          "ai",
+          "anomalies",
+          "predicted"
         ],
         "title": "Summary",
         "type": "object"

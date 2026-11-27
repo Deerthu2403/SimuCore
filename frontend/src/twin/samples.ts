@@ -1,4 +1,5 @@
 import type { Mirror } from "./mirror";
+import type { Insight } from "./types";
 
 /** Recent values of every metric, kept outside React: new points arrive every 2 s for every
  *  component, and only the charts on screen need to know. */
@@ -21,10 +22,21 @@ export function record(m: Mirror): void {
   const t = Date.parse(m.meta.last_observation_at);
   if (!(t > lastT)) return;
   lastT = t;
-  for (const id of m.componentIds) push(id, t, m.components[id].metrics);
+  for (const id of m.componentIds) {
+    push(id, t, m.components[id].metrics);
+    push(id, t, opinions(m.components[id].insight));
+  }
   for (const id of m.linkIds) push(id, t, m.links[id].metrics);
   version++;
   listeners.forEach((f) => f());
+}
+
+/** The opinions of the AI as curves, next to the measurements. */
+function opinions(i: Insight | null | undefined): Record<string, number> {
+  const out: Record<string, number> = {};
+  if (i?.anomaly) out.ai_anomaly = i.anomaly.score;
+  for (const r of i?.risks ?? []) if (r.probability !== null) out[`ai_risk_${r.target}`] = r.probability;
+  return out;
 }
 
 function push(id: string, t: number, metrics: Readonly<Record<string, number>>): void {

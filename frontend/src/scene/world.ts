@@ -1,5 +1,6 @@
 import { Box3, Color, Ray, Vector3 } from "three";
 import { STATUS } from "../twin/format";
+import { isAnomalous, riskOf } from "../twin/ai";
 import type { Mirror } from "../twin/mirror";
 import type { ComponentType, LinkKind, Status, TwinComponent } from "../twin/types";
 import type { Reach } from "../twin/graph";
@@ -41,6 +42,11 @@ export interface Node {
   /** Seconds (world clock) when the status last changed; drives the shock wave. */
   flashAt: number;
   bankService: string;
+  /** Confirmed anomaly, 0 to 1; predictive warning, its probability. 0 = none. */
+  anomaly: number;
+  toAnomaly: number;
+  risk: number;
+  toRisk: number;
 }
 
 export interface Wire {
@@ -113,6 +119,8 @@ export class World {
         n.flashAt = this.clock;
       }
       n.toLoad = loadOf(c);
+      n.toAnomaly = isAnomalous(c) ? c.insight!.anomaly!.score : 0;
+      n.toRisk = riskOf(c);
     }
     for (const w of this.wires) {
       const k = m.links[w.id];
@@ -141,6 +149,7 @@ export class World {
         visible: known?.visible ?? (this.first ? 1 : 0), toVisible: 1, highlight: known?.highlight ?? 0,
         toHighlight: 0, flashAt: known && known.status === c.status ? known.flashAt : -10,
         bankService: String(c.attributes.service ?? ""),
+        anomaly: known?.anomaly ?? 0, toAnomaly: 0, risk: known?.risk ?? 0, toRisk: 0,
       });
     }
     const oldWires = new Map(this.wires.map((w) => [w.id, w]));
@@ -206,12 +215,14 @@ export class World {
       n.highlight = ease(n.highlight, n.toHighlight, dt, rate(12));
       // unknown is not a number one could pass through
       n.load = n.toLoad < 0 ? -1 : ease(Math.max(0, n.load), n.toLoad, dt, rate(3));
+      n.anomaly = ease(n.anomaly, n.toAnomaly, dt, rate(6));
+      n.risk = ease(n.risk, n.toRisk, dt, rate(6));
       const to = COLORS[n.status];
       const c = n.color;
       c.r = ease(c.r, to.r, dt, rate(9));
       c.g = ease(c.g, to.g, dt, rate(9));
       c.b = ease(c.b, to.b, dt, rate(9));
-      busy ||= n.visible !== n.toVisible || n.highlight !== n.toHighlight || n.load !== n.toLoad
+      busy ||= n.anomaly !== n.toAnomaly || n.risk !== n.toRisk || n.visible !== n.toVisible || n.highlight !== n.toHighlight || n.load !== n.toLoad
         || c.r !== to.r || c.g !== to.g || c.b !== to.b;
     }
     for (const w of this.wires) {

@@ -126,10 +126,10 @@ class Telemetry:
         while self._window and now - self._window[0][0] > WINDOW_S:
             self._window.popleft()
 
-    def memory_mb(self) -> float:
+    def memory_mb(self, fresh: bool = False) -> float:
         at, value = self._mem_cache
         now = time.monotonic()
-        if now - at > 0.25:
+        if fresh or now - at > 0.25:
             mi = self._proc.memory_info()
             # Windows trims the working set of idle processes; private bytes do not shrink.
             value = getattr(mi, "private", mi.rss) / 1_048_576

@@ -37,11 +37,13 @@ from app.simulation.infrastructure import SimulatedBankInfrastructure  # noqa: E
 from app.twin.state import TwinState  # noqa: E402
 
 PROJECT = "simucore-stack-test"
-SERVICES = ["postgres", "backend", "frontend", "prometheus", "grafana", "monitoring"]
+SERVICES = ["postgres", "backend", "frontend", "prometheus", "grafana", "monitoring",
+            "intelligence"]
 UNPUBLISHED = {"node-exporter", "postgres-exporter"}  # no ports on this PC, no health check
 SECRETS = {k: secrets.token_hex(16) for k in
            ("POSTGRES_PASSWORD", "GRAFANA_DB_PASSWORD", "GRAFANA_ADMIN_PASSWORD",
-            "MONITOR_DB_PASSWORD", "EXPORTER_DB_PASSWORD", "TWIN_DB_PASSWORD")}
+            "MONITOR_DB_PASSWORD", "EXPORTER_DB_PASSWORD", "TWIN_DB_PASSWORD",
+            "AI_DB_PASSWORD")}
 ENV = {"POSTGRES_USER": "simucore", "GRAFANA_ADMIN_USER": "admin", **SECRETS}
 GRAFANA = "http://127.0.0.1:3000"
 CHECKS = []
@@ -176,7 +178,7 @@ async def p03(s: Stack) -> dict:
         "SELECT count(*) FROM pg_class WHERE relnamespace='public'::regnamespace "
         "AND relkind IN ('r','p') AND NOT relispartition")
     await conn.close()
-    assert n == 29, n  # 22 of Phase 1, 3 of monitoring, 4 of the digital twin
+    assert n == 30, n  # 22 of Phase 1, 3 of monitoring, 4 of the digital twin, 1 of the AI
     return {"tables": n}
 
 

@@ -35,6 +35,7 @@ flowchart LR
 | **Monitoring** *(done)* | Monitoring service, full metric set, Prometheus and exporters, PostgreSQL history, quality events, WebSocket, twin adapter, synthetic data (`monitoring/`, doc 09). Covers most of P2 Persistence: metric storage, partitions, history API | Banking services | every metric matches independent truth through two pipelines; every monitoring failure is detected |
 | **Digital twin core** *(done)* | Virtual infrastructure, six statuses, live synchronisation, history, API v2 and WebSocket with a published format for the 3D frontend (`backend/app/digital_twin`, doc 10) | Monitoring | every real change is reflected; chaos test without a mismatch |
 | **3D interface** *(done)* | Interactive 3D data centre on API v2: live statuses and metrics, request flow, isolate, dependency view, search, alerts, history (`frontend/`, doc 11). Includes the instanced rendering planned for P7 | Digital twin core | every interaction and real fault verified in a real browser; 1 000 objects above 50 fps |
+| **AI module** *(done; covers P3 Intelligence I)* | Isolation Forest and XGBoost on labelled synthetic data, AI service, storage with outcomes, opinions in the twin and the 3D interface (`intelligence/`, doc 12) | Monitoring, digital twin core | validated on held-out synthetic episodes and on real runs recorded after the models were frozen |
 
 The phase numbers above are unchanged; the unnumbered rows come between P1 and P2.
 

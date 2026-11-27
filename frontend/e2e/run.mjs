@@ -1187,6 +1187,135 @@ check("U32", "Six services fail together: the scene agrees with the twin at ever
   return { statuses_compared: compared, differences: 0, skipped_between_versions: late };
 });
 
+// ---------------------------------------------------------------- opinions of the AI
+const ai = async (path) => {
+  const r = await fetch(`${BASE}/ai/api/v1/ai/${path}`);
+  if (!r.ok) throw new Error(`${path}: ${r.status}`);
+  return r.json();
+};
+const quiet = async () => {
+  const s = await api("/summary");
+  const i = await api("/insights");
+  return s.ai === "live" && s.anomalies.length === 0 && s.predicted.length === 0
+    && Object.values(i).length === 8 && Object.values(i).every((x) => x.risks.length === 2 && x.risks.every((r) => r.probability !== null));
+};
+/** Memory of a service grows until ``stop`` says so. */
+async function leak(service, seconds, stop) {
+  const t0 = Date.now();
+  while (!(await stop())) {
+    const x = Math.min(1, (Date.now() - t0) / 1000 / seconds);
+    await bank("fault", service, "resource_exhaustion", "--mode", "memory", "--magnitude", (0.22 + 0.78 * x).toFixed(3), "--duration", "90").catch(() => undefined);
+    await sleep(2500);
+    if (Date.now() - t0 > (seconds + 45) * 1000) return;
+  }
+}
+
+check("U33", "Anomaly: the 3D service is marked while its status stays; panel, inspector, explanation", async (page) => {
+  await settled();
+  await until("quiet", quiet, 200, 1000);
+  same([(await node(page, "bank-fraud")).anomaly, (await node(page, "bank-fraud")).risk], [0, 0], "marked before");
+  await bank("fault", "fraud", "latency", "--latency-ms", "700", "--duration", "120");
+  const seen = await until("anomaly in the scene", async () => (await node(page, "bank-fraud")).anomaly > 0.45, 40, 100);
+  ok((await hook(page, "label", "bank-fraud")).text.includes("anomaly"), "label");
+  await tab(page, "drawer", 3);
+  await until("in the panel", () => page.$("[data-testid=ai-anomalies] [data-object=bank-fraud]"), 5);
+  await page.click("[data-testid=ai-anomalies] [data-object=bank-fraud]");
+  await until("inspector", () => page.$("[data-testid=ai-tab]"), 5);
+  const equal = async () => page.evaluate(async () => {
+    const i = (await (await fetch("/api/v2/twin/components/bank-fraud")).json()).insight;
+    await new Promise((f) => requestAnimationFrame(() => requestAnimationFrame(f)));
+    const tile = (m) => document.querySelector(`[data-testid=ai-tab] .tile[data-metric=${m}]`)?.dataset.value;
+    return i.anomaly && Math.abs(+tile("ai_anomaly") - i.anomaly.score) < 0.011
+      && i.risks.every((r) => r.probability === null ? tile(`ai_risk_${r.target}`) === "" : Math.abs(+tile(`ai_risk_${r.target}`) - r.probability) < 0.011);
+  });
+  await until("numbers equal the twin's", equal, 20, 150);
+  ok((await page.textContent("[data-testid=ai-tab]")).includes("Why unusual now"), "explanation");
+  ok((await page.textContent("[data-testid=ai-reasons]")).match(/Latency/), "contributing metric");
+  await page.screenshot({ path: join(OUT, "ai-anomaly.png") });
+  await bank("clear");
+  await until("mark gone", async () => (await node(page, "bank-fraud")).anomaly === 0, 60, 300);
+  await until("in the history", () => page.$("[data-testid=ai-history] [data-kind=anomaly][data-object=bank-fraud]"), 25, 500);
+  await reset(page);
+  return { seen_after_s: seen };
+});
+
+check("U34", "Predictive warning: shown in 3D before the failure, with probability and reason; then the failure comes", async (page) => {
+  await settled();
+  await until("quiet", quiet, 240, 1000);
+  await tab(page, "drawer", 3);
+  const id = "bank-account";
+  const at = {};
+  let status = null;
+  let label = "";
+  let toast = "";
+  const t0 = Date.now();
+  await leak("account", 130, async () => {
+    const n = await node(page, id);
+    if (n.risk > 0.2 && !at.warned) {
+      at.warned = (Date.now() - t0) / 1000;
+      status = n.status;
+      label = (await hook(page, "label", id)).text;
+      toast = await page.$$eval(".toast[data-status=predicted]", (l) => l.map((e) => e.textContent).join(" | "));
+      ok(await page.$(`[data-testid=ai-predictions] tr[data-id=${id}]:not([data-warning=""])`), "not in the panel");
+      await select(page, id);
+      await tab(page, "inspector", 4);
+      ok((await page.textContent("[data-testid=ai-tab] .ai-alert.risk")).match(/predicted within 2 min/), "inspector");
+      ok((await page.textContent("[data-testid=ai-reasons]")).includes("Why this risk"), "reasons");
+      await still(page);
+      await page.screenshot({ path: join(OUT, "ai-warning.png") });
+    }
+    if (n.status === "failed" && !at.failed) at.failed = (Date.now() - t0) / 1000;
+    return !!at.failed;
+  });
+  ok(at.warned && at.failed, at);
+  ok(status !== "failed" && status !== "overloaded", `status when warned: ${status}`);
+  ok(at.failed - at.warned >= 10, at);
+  ok(/(failure|degradation) .*%.* in 2 min/.test(label.replace(/\s+/g, " ")), label);
+  ok(/Account Management Service: (failure|degradation) predicted/.test(toast), toast);
+  await bank("clear");
+  await until("came true, in the history", () => page.$(`[data-testid=ai-history] [data-kind=warning][data-object=${id}][data-outcome=came_true]`), 40, 500);
+  await until("healthy", async () => (await node(page, id)).status === "healthy", 60, 300);
+  await reset(page);
+  return { warned_after_s: +at.warned.toFixed(1), failed_after_s: +at.failed.toFixed(1), lead_s: +(at.failed - at.warned).toFixed(1), status_when_warned: status, message: toast.slice(0, 120) };
+});
+
+check("U35", "AI panel: history and quality equal the AI service's answers, with their source", async (page) => {
+  await tab(page, "drawer", 3);
+  await until("history", () => page.$("[data-testid=ai-history] button"), 25, 500);
+  const key = (x, kind) => `${x.node_id}|${kind}|${kind === "warning" ? x.outcome : ""}`;
+  await until("equal", async () => {
+    const [w, a] = await Promise.all([ai("warnings?minutes=720&limit=200&origin=measured"), ai("anomalies?minutes=720&limit=200&origin=measured")]);
+    const want = [...w.map((x) => [x.opened_at, key(x, "warning")]), ...a.map((x) => [x.opened_at, key(x, "anomaly")])]
+      .sort((p, q) => Date.parse(q[0]) - Date.parse(p[0])).slice(0, 40).map((x) => x[1]).sort();
+    const got = (await page.$$eval("[data-testid=ai-history] button", (l) => l.map((e) => `${e.dataset.object}|${e.dataset.kind}|${e.dataset.outcome}`))).slice(0, 40).sort();
+    return JSON.stringify(want) === JSON.stringify(got);
+  }, 40, 1000);
+  const m = await ai("model");
+  const text = (await page.textContent("[data-testid=ai-quality]")).replace(/\s+/g, " ");
+  ok(text.includes(m.version) && text.includes("synthetic test set") && text.includes("calibrated on synthetic data"), text);
+  ok(text.includes(m.test.failure.xgboost.roc_auc.toFixed(2)), "ROC-AUC");
+  if (m.validation) ok(text.includes(`${m.validation.failure.events.announced} of ${m.validation.failure.events.failures}`), "validation");
+  const panel = (await page.textContent("[data-testid=ai-panel]")).replace(/\s+/g, " ");
+  ok(panel.includes("Isolation Forest, unsupervised") && panel.includes("XGBoost, supervised"), "the two methods must be kept apart");
+  ok((await page.$$("[data-testid=ai-predictions] tbody tr")).length === 8, "eight services");
+  await tab(page, "drawer", 1);
+  return { model: m.version, validated_on_real_runs: m.validation?.recordings ?? 0 };
+});
+
+check("U36", "AI service off: the page says so, no marks, everything else works; it comes back by itself", async (page) => {
+  await tab(page, "drawer", 3);
+  await docker("stop", "simucore-intelligence-1");
+  const said = await until("said", async () => (await page.getAttribute("[data-testid=ai-panel]", "data-ai")) === "absent", 25);
+  for (const id of await hook(page, "nodes")) same([(await node(page, id)).anomaly, (await node(page, id)).risk], [0, 0], id);
+  same(await page.getAttribute("[data-testid=freshness]", "data-state"), "live", "the twin");
+  ok(await page.$("[data-testid=inspector] .tile"), "measurements");
+  await docker("start", "simucore-intelligence-1");
+  const back = await until("back", async () => (await page.getAttribute("[data-testid=ai-panel]", "data-ai")) === "live", 60);
+  problems.splice(0, problems.length, ...problems.filter((p) => !/502|504|Failed to load|ERR_/.test(p)));
+  await tab(page, "drawer", 1);
+  return { said_after_s: said, back_after_s: back };
+});
+
 // ---------------------------------------------------------------------- main
 const wanted = process.argv.slice(2);
 const results = [];

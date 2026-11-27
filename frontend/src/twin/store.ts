@@ -11,7 +11,7 @@ export interface HistoryEvent extends Transition {
 
 export interface Toast {
   id: number;
-  status: Status;
+  status: Status | "predicted" | "anomaly";
   objectId: string;
   text: string;
   detail: string;
@@ -86,7 +86,7 @@ export const useTwin = create<TwinStore>((set, get) => ({
       mirror: r.mirror,
       receivedAt: Date.now(),
       events: mergeEvents(get().events, r.transitions, r.mirror.meta.run_id),
-      toasts: [...get().toasts, ...toastsFor(r.changes, r.mirror, prev)].slice(-4),
+      toasts: [...get().toasts, ...toastsFor(r.changes, r.mirror, prev), ...opinionToasts(r.mirror, prev)].slice(-4),
     });
     samples.record(r.mirror);
     if (r.changes.length || r.structure) changeListeners.forEach((f) => f(r.changes, r.structure));
@@ -111,6 +111,35 @@ function toastsFor(changes: StatusChange[], now: Mirror, prev: Mirror | null): T
     if (!worth) continue;
     const what = ch.to === "failed" ? "has failed" : ch.to === "overloaded" ? "is overloaded" : "is healthy again";
     out.push({ id: ++toastId, status: ch.to, objectId: ch.id, text: `${c.name} ${what}`, detail: c.reason });
+  }
+  return out;
+}
+
+/** A predictive warning, and an anomaly that is far from normal. Not for what was already so when the
+ *  page opened, nor when the AI service itself comes or goes. */
+function opinionToasts(now: Mirror, prev: Mirror | null): Toast[] {
+  if (!prev || prev.summary.ai !== now.summary.ai) return [];
+  const out: Toast[] = [];
+  for (const id of now.componentIds) {
+    const [a, b] = [prev.components[id], now.components[id]];
+    if (!a || a === b || !b.insight) continue;
+    const known = new Set((a.insight?.warnings ?? []).map((w) => w.target));
+    const fresh = b.insight.warnings.filter((w) => !known.has(w.target));
+    // one message per service: a predicted failure says more than a predicted degradation
+    const w = fresh.find((x) => x.target === "failure") ?? fresh[0];
+    if (w) {
+      const why = b.insight.reasons.find((r) => r.contribution > 0)?.text;
+      out.push({
+        id: ++toastId, status: "predicted", objectId: id,
+        text: `${b.name}: ${w.target} predicted`,
+        detail: `${Math.round(w.probability * 100)} % within ${w.horizon_s / 60} min${why ? `, mainly: ${why}` : ""}`,
+      });
+    } else if (!a.insight?.anomaly?.since && b.insight.anomaly?.since && b.insight.anomaly.level === "abnormal") {
+      out.push({
+        id: ++toastId, status: "anomaly", objectId: id, text: `${b.name} behaves abnormally`,
+        detail: `anomaly score ${b.insight.anomaly.score.toFixed(2)}`,
+      });
+    }
   }
   return out;
 }

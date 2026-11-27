@@ -306,7 +306,8 @@ describe("contract", () => {
 
   it.each([
     ["TwinComponent", "ComponentView"], ["TwinLink", "LinkView"], ["Summary", "Summary"], ["Meta", "TwinMeta"],
-    ["Finding", "FindingView"], ["DependencyRef", "DependencyRef"],
+    ["Finding", "FindingView"], ["DependencyRef", "DependencyRef"], ["Insight", "InsightView"],
+    ["AnomalyOpinion", "AnomalyView"], ["RiskOpinion", "RiskView"], ["PredictiveWarning", "PredictiveWarning"],
   ])("%s has the fields of %s", (ours, theirs) => expect(fields(ours)).toEqual(published(theirs)));
   it("transitions have the published fields", () => expect(fields("Transition").filter((f) => f !== "run_id")).toEqual(published("TransitionView")));
   it("knows every status, type and kind of link", () => {
@@ -317,7 +318,7 @@ describe("contract", () => {
 });
 
 describe("no invented data", () => {
-  const files = ["scene/TwinScene.tsx", "scene/world.ts", "scene/objects.ts", "scene/layout.ts", "scene/Labels.tsx", "ui/Inspector.tsx", "ui/LeftPanel.tsx", "ui/Events.tsx", "ui/Chrome.tsx", "ui/DependencyGraph.tsx", "twin/store.ts", "twin/samples.ts", "twin/view.ts"];
+  const files = ["scene/TwinScene.tsx", "scene/world.ts", "scene/objects.ts", "scene/layout.ts", "scene/Labels.tsx", "ui/Inspector.tsx", "ui/LeftPanel.tsx", "ui/Events.tsx", "ui/Chrome.tsx", "ui/DependencyGraph.tsx", "ui/Ai.tsx", "twin/ai.ts", "twin/store.ts", "twin/samples.ts", "twin/view.ts"];
   it.each(files)("%s contains no random values and no component ids", (f) => {
     const s = readFileSync(new URL(`../${f}`, import.meta.url), "utf-8");
     expect(s).not.toMatch(/Math\.random/);

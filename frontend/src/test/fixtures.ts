@@ -4,7 +4,7 @@ export function component(id: string, over: Partial<TwinComponent> & { type?: Co
   return {
     id, type: "microservice", name: `${id} Service`, description: "", criticality: 3, status: "healthy",
     status_since: null, previous_status: null, reason: "", findings: [], root_causes: [], metrics: {},
-    data_quality: "complete", attributes: {}, dependencies: { depends_on: [], dependents: [] },
+    data_quality: "complete", attributes: {}, dependencies: { depends_on: [], dependents: [] }, insight: null,
     display: { layer: "application", group: "bank", order: 0, size: 3, load: null, attention: false }, ...over,
   };
 }
@@ -31,7 +31,7 @@ export function message(
     },
     summary: type === "heartbeat" ? null : {
       overall: "healthy" as Status, components: components.length, by_status: {}, by_type: {}, links: links.length,
-      links_failed: 0, needs_attention: [],
+      links_failed: 0, needs_attention: [], ai: "live", anomalies: [], predicted: [],
     },
     components, links, transitions: [],
   };

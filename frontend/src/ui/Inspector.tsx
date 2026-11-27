@@ -6,6 +6,7 @@ import * as samples from "../twin/samples";
 import { useComponent, useFreshness, useLink, useTwin, useUnits } from "../twin/store";
 import type { DependencyRef, TwinComponent, TwinLink } from "../twin/types";
 import { useView } from "../twin/view";
+import { AiTab } from "./Ai";
 import { useNow } from "./hooks";
 import { DependencyGraph } from "./DependencyGraph";
 import { EventList } from "./Events";
@@ -49,11 +50,12 @@ function ComponentInspector({ id }: { id: string }) {
           <Button icon="graph" label="Dependencies" kbd="D" text active={mode === "dependencies"} onClick={() => { toggle("dependencies"); set({ rightTab: "dependencies" }); }} />
         </div>
       </header>
-      <Tabs value={tab} onChange={(t) => set({ rightTab: t })} items={[["metrics", "Live metrics"], ["dependencies", "Dependencies"], ["events", "Events"]]} />
+      <Tabs value={tab} onChange={(t) => set({ rightTab: t })} items={[["metrics", "Live metrics"], ["dependencies", "Dependencies"], ["events", "Events"], ["ai", "AI"]]} />
       <div className="scroll">
         {tab === "metrics" && <MetricsTab c={c} />}
         {tab === "dependencies" && <DependenciesTab c={c} />}
         {tab === "events" && <EventList objectId={id} />}
+        {tab === "ai" && <AiTab c={c} />}
       </div>
     </>
   );

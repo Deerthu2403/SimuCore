@@ -272,3 +272,19 @@ def test_every_dockerfile_source_exists():
             for name in SERVICES:
                 src = line.split()[1].replace("${SERVICE}", name)
                 assert (Path(ROOT) / src).exists(), src
+
+
+async def test_a_leak_grows_when_it_is_made_worse_step_by_step(settings):
+    """Each step replaces the one before; the memory must not drop back in between."""
+    async with Cluster(replace(settings, customers=2)) as bank:
+        ctx = bank.ctx("customer")
+        base = ctx.telemetry.memory_mb(fresh=True)
+        ctx.settings = replace(settings, mem_limit_mb=int(base / 0.98) + 400)
+        seen = []
+        for step in (0.25, 0.5, 0.75):
+            share = (base + 400 * step) / (ctx.settings.mem_limit_mb * 0.98)
+            ctx.telemetry.memory_mb()  # a request has just looked: the cached value is current
+            await bank.fault("customer", "resource_exhaustion", mode="memory",
+                             magnitude=min(1.0, share))
+            seen.append(ctx.telemetry.memory_mb(fresh=True) - base)
+        assert seen[0] > 50 and seen[1] > seen[0] + 50 and seen[2] > seen[1] + 50, seen

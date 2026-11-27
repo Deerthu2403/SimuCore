@@ -3,6 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { Ray, Vector3 } from "three";
 import { useTwin, useUnits } from "../twin/store";
 import { useView } from "../twin/view";
+import { AI_COLOR, isAnomalous, percent, riskOf, topWarning } from "../twin/ai";
 import { STATUS, text } from "../twin/format";
 import { Icon } from "../ui/Icon";
 import { world } from "./world";
@@ -62,7 +63,7 @@ export function LabelMover() {
         e.style.visibility = "hidden";
         continue;
       }
-      list.push({ id, e, x, y, z: V.z, rank: point ? 100 : STATUS[n.status].rank * 10 });
+      list.push({ id, e, x, y, z: V.z, rank: point ? 100 : STATUS[n.status].rank * 10 + (n.risk > 0 ? 35 : 0) + (n.anomaly > 0 ? 5 : 0) });
     }
     list.sort((a, b) => b.rank - a.rank || a.z - b.z);
     for (const l of list) {
@@ -138,6 +139,12 @@ export function Labels() {
 const Label = memo(function Label({ id }: { id: string }) {
   const name = useTwin((s) => s.mirror?.components[id]?.name);
   const status = useTwin((s) => s.mirror?.components[id]?.status);
+  const anomaly = useTwin((s) => { const c = s.mirror?.components[id]; return !!c && isAnomalous(c); });
+  const risk = useTwin((s) => {
+    const c = s.mirror?.components[id];
+    const w = c && topWarning(c);
+    return w ? `${w.target} ${percent(riskOf(c))} in ${w.horizon_s / 60} min` : "";
+  });
   const near = useView((s) => s.hovered === id || (s.selected?.kind === "component" && s.selected.id === id));
   if (!name || !status) return null;
   return (
@@ -150,6 +157,12 @@ const Label = memo(function Label({ id }: { id: string }) {
         <b>{shortName(name)}</b>
         {status !== "healthy" && <em>{STATUS[status].label}</em>}
       </span>
+      {(anomaly || risk) && (
+        <span className="label-ai">
+          {anomaly && <span><Icon name="anomaly" size={11} color={AI_COLOR.anomaly} /> anomaly</span>}
+          {risk && <span><Icon name="forecast" size={11} color={AI_COLOR.risk} /> {risk}</span>}
+        </span>
+      )}
       {near && <LabelNumbers id={id} />}
     </div>
   );

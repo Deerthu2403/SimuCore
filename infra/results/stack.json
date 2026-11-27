@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-25T09:15:18+00:00",
+  "run_at": "2026-11-26T04:19:39+00:00",
   "passed": 16,
   "total": 16,
   "results": [
@@ -7,9 +7,9 @@
       "code": "P01",
       "title": "All containers run and are healthy; ports are reachable from this PC only",
       "passed": true,
-      "seconds": 0.5,
+      "seconds": 0.4,
       "facts": {
-        "healthy": 8
+        "healthy": 9
       },
       "error": null
     },
@@ -17,7 +17,7 @@
       "code": "P02",
       "title": "Passwords come from .env; defaults are refused; none leak to other services",
       "passed": true,
-      "seconds": 2.1,
+      "seconds": 1.8,
       "facts": {
         "grafana": {
           "default": 401,
@@ -31,9 +31,9 @@
       "code": "P03",
       "title": "Schema loads without errors",
       "passed": true,
-      "seconds": 0.5,
+      "seconds": 0.4,
       "facts": {
-        "tables": 29
+        "tables": 30
       },
       "error": null
     },
@@ -41,7 +41,7 @@
       "code": "P04",
       "title": "Database enums match the Python models exactly",
       "passed": true,
-      "seconds": 0.1,
+      "seconds": 0.0,
       "facts": {
         "enums": 5,
         "metric_columns": 6
@@ -52,7 +52,7 @@
       "code": "P05",
       "title": "Both real topologies and live simulated data fit the schema and read back equal",
       "passed": true,
-      "seconds": 1.8,
+      "seconds": 1.0,
       "facts": {
         "nodes": 35,
         "samples": 540
@@ -73,7 +73,7 @@
       "code": "P07",
       "title": "Bad data is refused, for the right reason",
       "passed": true,
-      "seconds": 0.4,
+      "seconds": 0.3,
       "facts": {
         "refused": 12
       },
@@ -83,7 +83,7 @@
       "code": "P08",
       "title": "Deleting a parent removes its children and nothing else",
       "passed": true,
-      "seconds": 0.3,
+      "seconds": 0.2,
       "facts": {},
       "error": null
     },
@@ -102,7 +102,7 @@
       "code": "P10",
       "title": "Grafana's database role can read and do nothing else",
       "passed": true,
-      "seconds": 0.1,
+      "seconds": 0.0,
       "facts": {
         "refused": 14
       },
@@ -112,7 +112,7 @@
       "code": "P11",
       "title": "The 3D UI works through nginx: page, assets, API and live WebSocket",
       "passed": true,
-      "seconds": 3.9,
+      "seconds": 3.8,
       "facts": {
         "assets": 4,
         "live_updates": 3,
@@ -124,7 +124,7 @@
       "code": "P12",
       "title": "Prometheus scrapes the backend and has every node's metrics",
       "passed": true,
-      "seconds": 0.4,
+      "seconds": 0.3,
       "facts": {
         "series": 162
       },
@@ -134,7 +134,7 @@
       "code": "P13",
       "title": "Grafana: both data sources connect and every dashboard panel returns data",
       "passed": true,
-      "seconds": 0.5,
+      "seconds": 0.4,
       "facts": {
         "datasources": 2,
         "series_per_panel": {
@@ -150,10 +150,10 @@
       "code": "P14",
       "title": "A recreated backend (new address) is found again by nginx without a restart",
       "passed": true,
-      "seconds": 6.7,
+      "seconds": 5.0,
       "facts": {
         "address_changed": true,
-        "recovered_after_s": 2.0
+        "recovered_after_s": 0.8
       },
       "error": null
     },
@@ -161,7 +161,7 @@
       "code": "P15",
       "title": "PostgreSQL down: the live twin keeps running (it keeps state in memory)",
       "passed": true,
-      "seconds": 10.1,
+      "seconds": 9.7,
       "facts": {
         "updates_without_database": 3
       },
@@ -171,7 +171,7 @@
       "code": "P16",
       "title": "Data survives a PostgreSQL crash and a full stack down/up",
       "passed": true,
-      "seconds": 39.1,
+      "seconds": 36.5,
       "facts": {
         "postgres": "kept",
         "prometheus_history": "kept",

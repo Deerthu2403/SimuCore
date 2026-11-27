@@ -194,6 +194,14 @@ differ; `python scripts/export_twin_schema.py` updates it).
 Nothing is queued per client. A slow client gets fewer, larger messages with the current state, so it
 can fall behind but never be wrong.
 
+### Opinions of the AI service
+
+Each component has an `insight` (doc 12): an anomaly score, the probabilities of degradation and
+failure, warnings and reasons, received one way from the AI service over `/ws/insights`. They are
+checked like any other input, expire after 10 s, are accepted only for the same origin of data, and
+**never change a status**. `summary` has `ai`, `anomalies` and `predicted`;
+`/api/v2/twin/insights` lists all of them.
+
 ## 7. Configuration
 
 | Variable | Default | |
@@ -202,6 +210,7 @@ can fall behind but never be wrong.
 | `SIMUCORE_TWIN_MONITORING_WS` | `ws://127.0.0.1:8200/ws/metrics` | only the monitoring service is accepted |
 | `SIMUCORE_TWIN_DATABASE_URL` | none | without it there is no history |
 | `SIMUCORE_TWIN_STALE_AFTER_S` | `8` | |
+| `SIMUCORE_TWIN_AI_WS` | `ws://127.0.0.1:8300/ws/insights` | only the AI service is accepted; empty: without opinions |
 | `SIMUCORE_TWIN_RETENTION_DAYS` | `30` | |
 
 ## 8. Test results

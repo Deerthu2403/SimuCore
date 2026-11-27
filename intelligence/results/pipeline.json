@@ -1,0 +1,280 @@
+{
+ "run_at": "2026-11-27T12:18:00+00:00",
+ "passed": 16,
+ "total": 16,
+ "results": [
+  {
+   "code": "A01",
+   "title": "Every service is assessed within seconds, and the twin shows the same opinions",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "services": 8,
+    "values_compared": 80,
+    "data_age_s": 1.6,
+    "scoring_ms": 54.0,
+    "model": "c3c04f1fd85a"
+   },
+   "seconds": 25
+  },
+  {
+   "code": "A02",
+   "title": "Normal operation for 5 minutes: no predictive warning; false anomalies are counted",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "seconds": 300,
+    "warnings": 0,
+    "anomalies": 9,
+    "per_service_hour": 13.5,
+    "share_of_time": 0.0508,
+    "which": [
+     [
+      "bank-notification",
+      "traffic",
+      0.64
+     ],
+     [
+      "bank-payment",
+      "traffic",
+      0.7
+     ],
+     [
+      "bank-notification",
+      "traffic",
+      0.52
+     ],
+     [
+      "bank-notification",
+      "traffic",
+      0.57
+     ],
+     [
+      "bank-payment",
+      "traffic",
+      0.72
+     ],
+     [
+      "bank-notification",
+      "traffic",
+      0.53
+     ],
+     [
+      "bank-payment",
+      "traffic",
+      0.6
+     ],
+     [
+      "bank-notification",
+      "traffic",
+      0.53
+     ],
+     [
+      "bank-notification",
+      "traffic",
+      0.53
+     ]
+    ]
+   },
+   "seconds": 300
+  },
+  {
+   "code": "A03",
+   "title": "Memory leak: anomaly, then a warning before the failure; the outcome is recorded",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "anomaly": 24.4,
+    "anomaly_in_twin": 24.4,
+    "warned_failure": 52.0,
+    "warning_in_twin": 52.0,
+    "warned_degradation": 55.0,
+    "failed": 157.0,
+    "lead_s": 105.0,
+    "reasons_failure": [
+     "time until memory runs out at this rate",
+     "memory utilisation",
+     "memory utilisation now"
+    ],
+    "status_when_warned_failure": "healthy",
+    "reasons_degradation": [
+     "time until memory runs out at this rate",
+     "memory utilisation",
+     "free connections of the database it depends on"
+    ],
+    "status_when_warned_degradation": "healthy",
+    "outcomes": [
+     [
+      "degradation",
+      "came_true",
+      90.0
+     ],
+     [
+      "failure",
+      "came_true",
+      103.9000015258789
+     ]
+    ]
+   },
+   "seconds": 157
+  },
+  {
+   "code": "A04",
+   "title": "Crash without any sign: not announced (nobody could), and no opinion about a dead service",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "opinion_withdrawn_after_s": 1.9,
+    "warnings_before": 0
+   },
+   "seconds": 199
+  },
+  {
+   "code": "A05",
+   "title": "A leak that is stopped in time: the warning ends and is recorded as not having happened",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "warning_ended_after_s": 1.6,
+    "judged_after_s": 124.9
+   },
+   "seconds": 237
+  },
+  {
+   "code": "A06",
+   "title": "Anomalies of other kinds are found and named: latency, errors, a surge of traffic",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "fraud": [
+     "latency"
+    ],
+    "latency_s": 4.7,
+    "account": [
+     "errors",
+     "resources"
+    ],
+    "errors_s": 7.9,
+    "traffic_s": 5.4
+   },
+   "seconds": 225
+  },
+  {
+   "code": "A07",
+   "title": "The status of a component is never changed by an opinion",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "moments_flagged_by_ai_with_healthy_measurements": 22
+   },
+   "seconds": 270
+  },
+  {
+   "code": "A08",
+   "title": "Database outage: scoring and the twin go on, nothing is lost",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "rows_waiting": 66,
+    "written_after_s": 3.1,
+    "largest_gap_s": 10.0
+   },
+   "seconds": 47
+  },
+  {
+   "code": "A09",
+   "title": "AI service stops: the twin says so, statuses go on; it comes back by itself",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "noticed_after_s": 8.2,
+    "back_after_s": 6.6
+   },
+   "seconds": 17
+  },
+  {
+   "code": "A10",
+   "title": "Monitoring stops: opinions expire instead of growing old",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "expired_after_s": 6.6,
+    "back_after_s": 5.6
+   },
+   "seconds": 53
+  },
+  {
+   "code": "A11",
+   "title": "A restart does not pretend to know: open warnings become 'not known'",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "resolved_after_s": 1.3
+   },
+   "seconds": 68
+  },
+  {
+   "code": "A12",
+   "title": "Stored predictions: complete, every one with its outcome after the horizon, scored honestly",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "degradation": {
+     "stored": 950,
+     "with_outcome": 786,
+     "brier": 0.2968
+    },
+    "failure": {
+     "stored": 964,
+     "with_outcome": 800,
+     "brier": 0.3029
+    }
+   },
+   "seconds": 0
+  },
+  {
+   "code": "A13",
+   "title": "Its database role can add its own rows and nothing else",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "refused": 11,
+    "impossible_rows_refused": 3
+   },
+   "seconds": 0
+  },
+  {
+   "code": "A14",
+   "title": "Delay: from the measurement to the opinion in the twin",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "median_s": 0.02,
+    "worst_s": 3.2
+   },
+   "seconds": 23
+  },
+  {
+   "code": "A15",
+   "title": "40 listeners and nonsense do not disturb it",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "listeners": 40,
+    "fewest_messages": 8,
+    "scoring_ms": 26.5
+   },
+   "seconds": 14
+  },
+  {
+   "code": "A16",
+   "title": "Hung service: no score, no prediction, no false alarm about it",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "withdrawn_after_s": 3.4
+   },
+   "seconds": 38
+  }
+ ]
+}

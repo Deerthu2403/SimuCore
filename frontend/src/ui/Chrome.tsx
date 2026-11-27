@@ -6,6 +6,8 @@ import { useFreshness, useTwin, type Toast } from "../twin/store";
 import { STATUSES, type Status } from "../twin/types";
 import { useView, type Preset } from "../twin/view";
 import { Alerts, EventList, useAlerts } from "./Events";
+import { AI_COLOR } from "../twin/ai";
+import { AiPanel } from "./Ai";
 import { useNow } from "./hooks";
 import { Button, Icon, StatusChip } from "./Icon";
 import { Tabs } from "./Inspector";
@@ -208,6 +210,8 @@ export function Legend() {
       {open && (
         <dl>
           {STATUSES.map((s) => <div key={s}><dt><StatusChip status={s} small /></dt><dd>{LOOK[s]}</dd></div>)}
+          <div><dt><Icon name="anomaly" size={13} color={AI_COLOR.anomaly} /> anomaly</dt><dd>ring of moving dashes: unusual now (Isolation Forest)</dd></div>
+          <div><dt><Icon name="forecast" size={13} color={AI_COLOR.risk} /> prediction</dt><dd>arc, as long as the failure or degradation is probable within 2 minutes (XGBoost)</dd></div>
           <div><dt>Moving lights</dt><dd>requests; more and faster with more traffic (logarithmic), red = failing</dd></div>
           <div><dt>Blinking rows</dt><dd>activity of the servers, from the measured load</dd></div>
           <div><dt>Bar at the edge</dt><dd>measured load, 0 to 100 %</dd></div>
@@ -231,13 +235,17 @@ export function Drawer() {
   const tab = useView((s) => s.bottomTab);
   const set = useView((s) => s.set);
   const n = useAlerts().length;
+  const anomalies = useTwin((s) => s.mirror?.summary.anomalies.length ?? 0);
+  const predicted = useTwin((s) => s.mirror?.summary.predicted.length ?? 0);
   return (
-    <section className="panel bottom" aria-label="Alerts and events" data-testid="drawer">
+    <section className={`panel bottom ${tab === "ai" ? "tall" : ""}`} aria-label="Alerts and events" data-testid="drawer">
       <Tabs value={tab} onChange={(t) => set({ bottomTab: t })} items={[
         ["alerts", <>Alerts <span className={`count ${n ? "hot" : ""}`} data-testid="alert-count">{n}</span></>],
         ["events", "Event history"],
+        ["ai", <>AI insights <span className="count" data-testid="ai-count" title={`${anomalies} anomalies, ${predicted} predictive warnings`}>
+          <Icon name="anomaly" size={11} color={AI_COLOR.anomaly} />{anomalies} <Icon name="forecast" size={11} color={AI_COLOR.risk} />{predicted}</span></>],
       ]} />
-      <div className="scroll">{tab === "alerts" ? <Alerts /> : <EventList />}</div>
+      <div className="scroll">{tab === "alerts" ? <Alerts /> : tab === "events" ? <EventList /> : <AiPanel />}</div>
     </section>
   );
 }
@@ -248,17 +256,25 @@ export function Toasts() {
   return <div className="toasts" aria-live="polite" data-testid="toasts">{toasts.map((t) => <ToastCard key={t.id} t={t} />)}</div>;
 }
 
+const TOAST = {
+  predicted: { icon: "forecast", color: AI_COLOR.risk },
+  anomaly: { icon: "anomaly", color: AI_COLOR.anomaly },
+};
+
 function ToastCard({ t }: { t: Toast }) {
   const dismiss = useTwin((s) => s.dismiss);
   const select = useView((s) => s.select);
+  const set = useView((s) => s.set);
+  const ai = t.status === "predicted" || t.status === "anomaly";
+  const look = t.status === "predicted" || t.status === "anomaly" ? TOAST[t.status] : STATUS[t.status];
   useEffect(() => {
-    const h = setTimeout(() => dismiss(t.id), t.status === "failed" || t.status === "overloaded" ? 9000 : 5000);
+    const h = setTimeout(() => dismiss(t.id), t.status === "failed" || t.status === "overloaded" || t.status === "predicted" ? 9000 : 5000);
     return () => clearTimeout(h);
   }, [t.id, t.status, dismiss]);
   return (
-    <div className="toast" data-status={t.status} data-object={t.objectId} style={{ "--c": STATUS[t.status].color } as React.CSSProperties}>
-      <Icon name={STATUS[t.status].icon} size={18} color={STATUS[t.status].color} />
-      <button type="button" className="toast-text" onClick={() => { select({ kind: "component", id: t.objectId }, { fly: true }); dismiss(t.id); }}>
+    <div className="toast" data-status={t.status} data-object={t.objectId} style={{ "--c": look.color } as React.CSSProperties}>
+      <Icon name={look.icon} size={18} color={look.color} />
+      <button type="button" className="toast-text" onClick={() => { select({ kind: "component", id: t.objectId }, { fly: true }); if (ai) set({ rightTab: "ai" }); dismiss(t.id); }}>
         <b>{t.text}</b>{t.detail && <span>{t.detail}</span>}
       </button>
       <Button icon="close" label="Dismiss" onClick={() => dismiss(t.id)} />

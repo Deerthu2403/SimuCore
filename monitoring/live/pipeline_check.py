@@ -49,7 +49,7 @@ REQUIRED = ["cpu_pct", "mem_pct", "latency_ms", "rps", "error_rate", "net_rx_bps
             "db_response_ms", "active_connections", "availability", "queue_length"]
 PW = {k: secrets.token_hex(16) for k in (
     "POSTGRES_PASSWORD", "GRAFANA_DB_PASSWORD", "GRAFANA_ADMIN_PASSWORD", "MONITOR_DB_PASSWORD",
-    "EXPORTER_DB_PASSWORD", "TWIN_DB_PASSWORD")}
+    "EXPORTER_DB_PASSWORD", "TWIN_DB_PASSWORD", "AI_DB_PASSWORD")}
 WINDOW = 12.0  # rate window plus a tick: how long a steady state needs to fill the window
 CHECKS: list[tuple] = []
 

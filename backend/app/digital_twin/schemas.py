@@ -65,6 +65,60 @@ class LinkDisplay(BaseModel):
     attention: bool
 
 
+class AnomalyContribution(BaseModel):
+    metric: str
+    share: float = Field(ge=0, le=1, description="Part of the anomaly score it explains")
+    deviation: float = Field(description="Distance from normal, in units of the normal spread")
+
+
+class AnomalyView(BaseModel):
+    """Isolation Forest, unsupervised: how unusual this moment is. Says nothing about the future."""
+
+    score: float = Field(ge=0, le=1, description="0.5 is the threshold")
+    level: Literal["normal", "unusual", "abnormal"]
+    condition: str
+    since: datetime | None = Field(description="When the anomaly was confirmed; null if it is not")
+    contributions: list[AnomalyContribution]
+
+
+class RiskView(BaseModel):
+    """XGBoost, supervised: probability that the target occurs within the horizon. Calibrated on
+    synthetic data."""
+
+    target: Literal["degradation", "failure"]
+    probability: float | None = Field(ge=0, le=1, description="null: present or just over")
+    level: Literal["low", "elevated", "high", "present", "recovering"]
+    horizon_s: int
+
+
+class PredictiveWarning(BaseModel):
+    id: str
+    target: Literal["degradation", "failure"]
+    probability: float = Field(ge=0, le=1, description="When the warning opened")
+    peak: float = Field(ge=0, le=1)
+    opened_at: datetime
+    horizon_s: int
+
+
+class RiskReason(BaseModel):
+    metric: str
+    text: str
+    contribution: float = Field(description="Log-odds; positive raises the risk")
+
+
+class InsightView(BaseModel):
+    """What the AI service thinks. Never part of the status."""
+
+    assessed_at: datetime
+    model: str
+    anomaly: AnomalyView | None
+    anomaly_reason: str = Field(description="Why there is no anomaly score")
+    risks: list[RiskView]
+    risk_reason: str = Field(description="Why there is no prediction")
+    warnings: list[PredictiveWarning]
+    reasons: list[RiskReason]
+
+
 class ComponentView(BaseModel):
     id: str
     type: ComponentType
@@ -81,6 +135,7 @@ class ComponentView(BaseModel):
     data_quality: Literal["complete", "partial", "derived", "none"]
     attributes: dict[str, Any]
     dependencies: Dependencies
+    insight: InsightView | None = Field(description="Opinion of the AI service; null if none")
     display: ComponentDisplay
 
 
@@ -109,6 +164,9 @@ class Summary(BaseModel):
     links: int
     links_failed: int
     needs_attention: list[str] = Field(description="Ids, most serious first")
+    ai: Literal["live", "absent"] = Field(description="Does the AI service report?")
+    anomalies: list[str] = Field(description="Ids with a confirmed anomaly")
+    predicted: list[str] = Field(description="Ids with a predictive warning")
 
 
 class TwinMeta(BaseModel):
@@ -175,10 +233,26 @@ def component_view(twin: DigitalTwin, cid: str) -> ComponentView:
         dependencies=Dependencies(
             depends_on=[ref(k.id, k.target) for k in twin.blueprint.outgoing[cid]],
             dependents=[ref(k.id, k.source) for k in twin.blueprint.incoming[cid]]),
+        insight=insight_view(twin, cid),
         display=ComponentDisplay(
             layer=spec.layer, group=spec.group, order=same_layer.index(cid), size=spec.criticality,
             load=_load(spec.attributes, s),
             attention=s.status in (Status.FAILED, Status.OVERLOADED, Status.RECOVERING)))
+
+
+def insight_view(twin: DigitalTwin, cid: str) -> InsightView | None:
+    i = twin.insights.get(cid)
+    if i is None:
+        return None
+    a = i.anomaly
+    return InsightView(
+        assessed_at=i.assessed_at, model=i.model,
+        anomaly=None if a is None else AnomalyView(
+            score=a.score, level=a.level, condition=a.condition, since=a.since,
+            contributions=[AnomalyContribution(**vars(c)) for c in a.contributions]),
+        anomaly_reason=i.anomaly_reason, risks=[RiskView(**vars(r)) for r in i.risks],
+        risk_reason=i.risk_reason, warnings=[PredictiveWarning(**vars(w)) for w in i.warnings],
+        reasons=[RiskReason(**vars(r)) for r in i.reasons])
 
 
 def link_view(twin: DigitalTwin, lid: str) -> LinkView:
@@ -208,7 +282,9 @@ def summary(twin: DigitalTwin) -> Summary:
         overall=max(bank, key=SEVERITY.index), components=len(specs), by_status=by_status,
         by_type=by_type, links=len(twin.links),
         links_failed=sum(s.status is Status.FAILED for s in twin.links.values()),
-        needs_attention=trouble)
+        needs_attention=trouble, ai="live" if twin.insights else "absent",
+        anomalies=sorted(c for c, i in twin.insights.items() if i.anomaly and i.anomaly.since),
+        predicted=sorted(c for c, i in twin.insights.items() if i.warnings))
 
 
 def meta(twin: DigitalTwin, now: datetime) -> TwinMeta:

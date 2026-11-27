@@ -1,0 +1,8 @@
+.venv
+recordings
+tests
+live
+__pycache__
+.pytest_cache
+.ruff_cache
+.env*

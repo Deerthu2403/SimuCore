@@ -283,7 +283,7 @@ function installHook(camera: PerspectiveCamera, el: HTMLCanvasElement, info: Web
       v.set(n.x, n.size.h * 0.55, n.z);
       return {
         status: n.status, color: `#${n.color.getHexString()}`, load: n.load, visible: n.visible,
-        highlight: n.highlight, x: n.x, z: n.z, sinceChange: world.clock - n.flashAt, screen: screen(),
+        highlight: n.highlight, x: n.x, z: n.z, sinceChange: world.clock - n.flashAt, anomaly: n.anomaly, risk: n.risk, screen: screen(),
       };
     },
     wire: (id: string, t = 0.5) => {

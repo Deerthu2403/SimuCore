@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     twin_database_url: str | None = None  # without it there is no history
     twin_stale_after_s: float = 8.0
     twin_retention_days: int = 30
+    twin_ai_ws: str | None = "ws://127.0.0.1:8300/ws/insights"  # None: without AI insights
 
     # Prometheus adapter (future production integration; read-only)
     prometheus_url: str = "http://localhost:9090"

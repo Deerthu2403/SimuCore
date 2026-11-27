@@ -1,7 +1,7 @@
 {
- "run_at": "2026-11-25T09:33:54Z",
- "passed": 32,
- "total": 32,
+ "run_at": "2026-11-26T04:07:54Z",
+ "passed": 36,
+ "total": 36,
  "results": [
   {
    "code": "U01",
@@ -24,9 +24,9 @@
      662
     ],
     "draw_calls": 39,
-    "triangles": 22718
+    "triangles": 22786
    },
-   "seconds": 0
+   "seconds": 9
   },
   {
    "code": "U02",
@@ -48,7 +48,7 @@
    "measured": {
     "clicked": 17
    },
-   "seconds": 30
+   "seconds": 34
   },
   {
    "code": "U04",
@@ -56,7 +56,7 @@
    "passed": true,
    "error": null,
    "measured": {
-    "label": "Account Management CPU 9.9 % · RAM 17.9 % · p95 22.8 ms · 10 req/s",
+    "label": "Account Management CPU 11.1 % · RAM 17.9 % · p95 21.8 ms · 14.2 req/s",
     "of": "Account Management Service"
    },
    "seconds": 1
@@ -74,7 +74,7 @@
      71.9
     ]
    },
-   "seconds": 12
+   "seconds": 8
   },
   {
    "code": "U06",
@@ -134,7 +134,7 @@
     "store-bank": 2,
     "net-bank": 9
    },
-   "seconds": 14
+   "seconds": 17
   },
   {
    "code": "U10",
@@ -174,22 +174,22 @@
    "passed": true,
    "error": null,
    "measured": {
-    "different_values": 9,
+    "different_values": 10,
     "lag_ms": [
-     24,
-     28,
-     26,
-     36,
-     36,
-     25,
-     35,
-     30,
-     38,
-     24
+     17,
+     14,
+     14,
+     13,
+     16,
+     13,
+     15,
+     17,
+     14,
+     15
     ],
     "curves": 8
    },
-   "seconds": 38
+   "seconds": 29
   },
   {
    "code": "U13",
@@ -198,11 +198,11 @@
    "error": null,
    "measured": {
     "low": {
-     "flow": 0.32,
-     "speed": 0.2
+     "flow": 0.3,
+     "speed": 0.19
     },
     "high": {
-     "flow": 0.63,
+     "flow": 0.61,
      "speed": 0.29
     }
    },
@@ -214,12 +214,12 @@
    "passed": true,
    "error": null,
    "measured": {
-    "crash_to_scene_s": 3.3,
+    "crash_to_scene_s": 3.4,
     "twin_to_scene_ms": 0,
-    "fully_red_ms": 642,
+    "fully_red_ms": 658,
     "healthy_again_s": 8.7
    },
-   "seconds": 36
+   "seconds": 34
   },
   {
    "code": "U15",
@@ -227,9 +227,9 @@
    "passed": true,
    "error": null,
    "measured": {
-    "seen_after_s": 7.7
+    "seen_after_s": 10.2
    },
-   "seconds": 35
+   "seconds": 36
   },
   {
    "code": "U16",
@@ -237,7 +237,7 @@
    "passed": true,
    "error": null,
    "measured": {
-    "seen_after_s": 2
+    "seen_after_s": 2.6
    },
    "seconds": 9
   },
@@ -247,16 +247,16 @@
    "passed": true,
    "error": null,
    "measured": {
-    "seen_after_s": 3.7
+    "seen_after_s": 4.8
    },
-   "seconds": 25
+   "seconds": 26
   },
   {
    "code": "U18",
    "title": "Display: hide types, highlight a status, cables, names, detail, panels, legend",
    "passed": true,
    "error": null,
-   "seconds": 24
+   "seconds": 22
   },
   {
    "code": "U19",
@@ -265,9 +265,9 @@
    "error": null,
    "measured": {
     "said_after_s": 0,
-    "live_again_s": 6.4
+    "live_again_s": 1.7
    },
-   "seconds": 9
+   "seconds": 4
   },
   {
    "code": "U20",
@@ -275,10 +275,10 @@
    "passed": true,
    "error": null,
    "measured": {
-    "said_after_s": 7.9,
-    "live_again_s": 6.2
+    "said_after_s": 7.4,
+    "live_again_s": 6.6
    },
-   "seconds": 18
+   "seconds": 17
   },
   {
    "code": "U21",
@@ -296,10 +296,10 @@
    "passed": true,
    "error": null,
    "measured": {
-    "silence_noticed_s": 11.8,
+    "silence_noticed_s": 11.9,
     "connections": 3
    },
-   "seconds": 23
+   "seconds": 18
   },
   {
    "code": "U23",
@@ -314,14 +314,14 @@
     "768x1024: scene 768x826",
     "390x844: scene 390x646"
    ],
-   "seconds": 23
+   "seconds": 26
   },
   {
    "code": "U24",
    "title": "Reduced motion: no travelling lights, no flights, all information remains",
    "passed": true,
    "error": null,
-   "seconds": 3
+   "seconds": 2
   },
   {
    "code": "U25",
@@ -335,7 +335,7 @@
    "title": "No 3D graphics: the panels still work and say what is missing",
    "passed": true,
    "error": null,
-   "seconds": 2
+   "seconds": 3
   },
   {
    "code": "U27",
@@ -345,34 +345,34 @@
    "measured": {
     "17": {
      "links": 40,
-     "fps": 60,
-     "frame_ms_p95": 17,
-     "draw_ms_median": 1.2,
+     "fps": 144,
+     "frame_ms_p95": 7.1,
+     "draw_ms_median": 0.7,
      "draw_calls": 39,
-     "triangles": 22718,
+     "triangles": 22786,
      "detail_level": 0
     },
     "300": {
      "links": 700,
-     "fps": 59,
-     "frame_ms_p95": 17.3,
-     "draw_ms_median": 1.1,
+     "fps": 129,
+     "frame_ms_p95": 10.6,
+     "draw_ms_median": 0.8,
      "draw_calls": 39,
-     "triangles": 240980,
+     "triangles": 242180,
      "detail_level": 0
     },
     "1000": {
      "links": 2349,
-     "fps": 53,
-     "frame_ms_p95": 23.6,
-     "draw_ms_median": 1.1,
+     "fps": 81,
+     "frame_ms_p95": 19.3,
+     "draw_ms_median": 0.9,
      "draw_calls": 39,
-     "triangles": 801010,
+     "triangles": 805010,
      "detail_level": 0,
-     "pick_ms": 2
+     "pick_ms": 4
     }
    },
-   "seconds": 78
+   "seconds": 77
   },
   {
    "code": "U28",
@@ -381,21 +381,21 @@
    "error": null,
    "measured": {
     "after_20": {
-     "mb": 9.9,
-     "nodes": 810,
-     "listeners": 246,
+     "mb": 10,
+     "nodes": 820,
+     "listeners": 247,
      "geometries": 35,
      "textures": 18
     },
     "after_80": {
-     "mb": 10.6,
-     "nodes": 810,
-     "listeners": 246,
+     "mb": 10.9,
+     "nodes": 825,
+     "listeners": 247,
      "geometries": 35,
      "textures": 18
     }
    },
-   "seconds": 25
+   "seconds": 27
   },
   {
    "code": "U29",
@@ -406,7 +406,7 @@
     "in_containers": 16,
     "as_processes": 17
    },
-   "seconds": 105
+   "seconds": 101
   },
   {
    "code": "U30",
@@ -419,7 +419,7 @@
      "localhost:8080"
     ]
    },
-   "seconds": 9
+   "seconds": 11
   },
   {
    "code": "U31",
@@ -434,11 +434,57 @@
    "passed": true,
    "error": null,
    "measured": {
-    "statuses_compared": 7182,
+    "statuses_compared": 7467,
     "differences": 0,
-    "skipped_between_versions": 2
+    "skipped_between_versions": 5
    },
    "seconds": 76
+  },
+  {
+   "code": "U33",
+   "title": "Anomaly: the 3D service is marked while its status stays; panel, inspector, explanation",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "seen_after_s": 4.6
+   },
+   "seconds": 80
+  },
+  {
+   "code": "U34",
+   "title": "Predictive warning: shown in 3D before the failure, with probability and reason; then the failure comes",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "warned_after_s": 40.2,
+    "failed_after_s": 137.9,
+    "lead_s": 97.7,
+    "status_when_warned": "healthy",
+    "message": "Account Management Service: failure predicted48 % within 2 min, mainly: time until memory runs out at this rate"
+   },
+   "seconds": 155
+  },
+  {
+   "code": "U35",
+   "title": "AI panel: history and quality equal the AI service's answers, with their source",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "model": "c3c04f1fd85a",
+    "validated_on_real_runs": 30
+   },
+   "seconds": 0
+  },
+  {
+   "code": "U36",
+   "title": "AI service off: the page says so, no marks, everything else works; it comes back by itself",
+   "passed": true,
+   "error": null,
+   "measured": {
+    "said_after_s": 7.7,
+    "back_after_s": 6
+   },
+   "seconds": 16
   }
  ]
 }

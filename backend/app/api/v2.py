@@ -97,7 +97,18 @@ async def catalogue(request: Request) -> dict:
 async def sync_status(request: Request) -> dict:
     """How well the twin is synchronised."""
     _twin(request)
-    return request.app.state.twin_sync.status()
+    insights = getattr(request.app.state, "insight_sync", None)
+    return {**request.app.state.twin_sync.status(),
+            "ai": insights.status() if insights else None}
+
+
+@router.get("/insights", response_model=dict[str, v.InsightView])
+async def insights(request: Request) -> dict[str, v.InsightView]:
+    """What the AI service thinks about each component: anomalies (Isolation Forest) and predicted
+    degradation or failure (XGBoost). Opinions, not measurements; they never change a status."""
+    twin = _twin(request)
+    views = {c: v.insight_view(twin, c) for c in twin.insights}
+    return {c: i for c, i in views.items() if i is not None}
 
 
 @router.get("/components", response_model=list[v.ComponentView])

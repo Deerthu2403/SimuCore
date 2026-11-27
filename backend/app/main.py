@@ -28,6 +28,7 @@ from app.digital_twin import blueprint
 from app.digital_twin.feed import MonitoringFeed
 from app.digital_twin.history import TwinHistory
 from app.digital_twin.hub import TwinHub
+from app.digital_twin.insights import InsightFeed, InsightSync
 from app.digital_twin.state import DigitalTwin
 from app.digital_twin.sync import TwinSync
 from app.simulation.bank_topology import build_reference_topology
@@ -77,12 +78,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if twin_sync:
             app.state.twin_sync, app.state.twin_hub = twin_sync, twin_sync.hub
             app.state.digital_twin = twin_sync.twin
+        insights = InsightSync(twin_sync.twin, InsightFeed(settings.twin_ai_ws), twin_sync.hub) \
+            if twin_sync and settings.twin_ai_ws else None
+        app.state.insight_sync = insights
         await sync.start()
         if twin_sync:
             await twin_sync.start()
+        if insights:
+            await insights.start()
         try:
             yield
         finally:
+            if insights:
+                await insights.stop()
             if twin_sync:
                 await twin_sync.stop()
             await sync.stop()

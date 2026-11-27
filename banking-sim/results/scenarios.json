@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-24T15:56:56+00:00",
+  "run_at": "2026-11-26T07:39:01+00:00",
   "platform": "Windows-11-10.0.26300-SP0",
   "python": "3.13.7",
   "mode": "local processes",
@@ -10,7 +10,7 @@
       "code": "S01",
       "title": "Health checks: all eight services live and ready",
       "passed": true,
-      "seconds": 0.9,
+      "seconds": 0.8,
       "facts": {
         "ready": 8
       },
@@ -20,7 +20,7 @@
       "code": "S02",
       "title": "Normal workload succeeds completely",
       "passed": true,
-      "seconds": 16.9,
+      "seconds": 17.0,
       "facts": {
         "requests": 142,
         "outcomes": {
@@ -28,7 +28,7 @@
           "rejected": 0,
           "failed": 0
         },
-        "p95_ms": 77.0
+        "p95_ms": 81.4
       },
       "error": null
     },
@@ -36,7 +36,7 @@
       "code": "S03",
       "title": "Peak workload (within capacity) is slower but does not fail",
       "passed": true,
-      "seconds": 16.7,
+      "seconds": 17.3,
       "facts": {
         "requests": 476,
         "outcomes": {
@@ -44,7 +44,7 @@
           "rejected": 0,
           "failed": 0
         },
-        "p95_ms": 111.9
+        "p95_ms": 524.7
       },
       "error": null
     },
@@ -52,20 +52,20 @@
       "code": "S04",
       "title": "Overload beyond capacity is shed, money stays correct, service recovers",
       "passed": true,
-      "seconds": 27.5,
+      "seconds": 30.9,
       "facts": {
         "offered_peak_rps": 120,
         "requests": 1153,
         "outcomes": {
-          "ok": 854,
+          "ok": 690,
           "rejected": 0,
-          "failed": 299
+          "failed": 463
         },
-        "p95_ms": 4069.3,
-        "overloaded": 186,
+        "p95_ms": 5529.3,
+        "overloaded": 242,
         "after": {
-          "transactions_completed": 395,
-          "transactions_failed": 63,
+          "transactions_completed": 291,
+          "transactions_failed": 102,
           "transactions_processing": 0,
           "open_holds": 0,
           "payments_authorized_not_settled": 0
@@ -77,7 +77,7 @@
       "code": "S05",
       "title": "Abnormal workload is refused by business rules, not by crashes",
       "passed": true,
-      "seconds": 16.7,
+      "seconds": 17.6,
       "facts": {
         "outcomes": {
           "ok": 51,
@@ -102,7 +102,7 @@
       "code": "S06",
       "title": "Crash of Account Management: transactions stop, customers and login work",
       "passed": true,
-      "seconds": 10.5,
+      "seconds": 11.3,
       "facts": {
         "failure_path": [
           "transaction",
@@ -115,7 +115,7 @@
       "code": "S07",
       "title": "Soft downtime of Fraud Detection: small transfers degrade, large ones stop",
       "passed": true,
-      "seconds": 0.6,
+      "seconds": 0.7,
       "facts": {
         "small": "completed unscreened",
         "large": "refused 503"
@@ -126,7 +126,7 @@
       "code": "S08",
       "title": "Payment Gateway stopped: payments fail with funds released, transfers work",
       "passed": true,
-      "seconds": 16.1,
+      "seconds": 11.6,
       "facts": {
         "failure_path": [
           "transaction",
@@ -139,7 +139,7 @@
       "code": "S09",
       "title": "Notification Service down: payments still complete",
       "passed": true,
-      "seconds": 26.4,
+      "seconds": 19.4,
       "facts": {
         "receipt": "unavailable",
         "payment": "completed"
@@ -150,7 +150,7 @@
       "code": "S10",
       "title": "Authentication down: every customer request is blocked",
       "passed": true,
-      "seconds": 17.6,
+      "seconds": 17.4,
       "facts": {
         "failure_paths": {
           "customer": [
@@ -173,10 +173,10 @@
       "code": "S11",
       "title": "Moderate database latency slows everything but nothing fails",
       "passed": true,
-      "seconds": 19.0,
+      "seconds": 19.5,
       "facts": {
-        "baseline_p50_ms": 13.0,
-        "slow_p50_ms": 175.1,
+        "baseline_p50_ms": 14.0,
+        "slow_p50_ms": 175.8,
         "failed": 0
       },
       "error": null
@@ -185,10 +185,10 @@
       "code": "S12",
       "title": "Severe database latency becomes timeouts, then open circuits that fail fast",
       "passed": true,
-      "seconds": 13.6,
+      "seconds": 15.0,
       "facts": {
-        "first_ms": 1030,
-        "last_ms": 6,
+        "first_ms": 1018,
+        "last_ms": 5,
         "circuit": "open"
       },
       "error": null
@@ -197,25 +197,25 @@
       "code": "S13",
       "title": "CPU exhaustion in Transaction Processing: moderate slows it, severe cripples it",
       "passed": true,
-      "seconds": 75.2,
+      "seconds": 44.0,
       "facts": {
         "baseline": {
           "median_ms": 57,
           "ok": 30,
           "refused_503": 0,
-          "cpu_pct": 43.8
+          "cpu_pct": 44.1
         },
         "moderate": {
-          "median_ms": 123,
+          "median_ms": 140,
           "ok": 30,
           "refused_503": 0,
-          "cpu_pct": 80.1
+          "cpu_pct": 82.9
         },
         "severe": {
-          "median_ms": 8685,
+          "median_ms": 6209,
           "ok": 0,
           "refused_503": 8,
-          "cpu_pct": 99.7
+          "cpu_pct": 99.9
         }
       },
       "error": null
@@ -226,8 +226,8 @@
       "passed": true,
       "seconds": 1.7,
       "facts": {
-        "mem_pct": 98.47,
-        "mem_after": 17.92
+        "mem_pct": 98.5,
+        "mem_after": 17.94
       },
       "error": null
     },
@@ -255,7 +255,7 @@
       "code": "S17",
       "title": "Database connection pool exhausted: queries time out waiting",
       "passed": true,
-      "seconds": 2.2,
+      "seconds": 11.1,
       "facts": {
         "message": "database: DB_POOL_EXHAUSTED"
       },
@@ -265,7 +265,7 @@
       "code": "S18",
       "title": "Every service can be stopped, started and restarted alone",
       "passed": true,
-      "seconds": 93.5,
+      "seconds": 99.9,
       "facts": {
         "stop_modes": {
           "database": "graceful",
@@ -285,7 +285,7 @@
       "code": "S19",
       "title": "Services start in reverse order, before their dependencies exist",
       "passed": true,
-      "seconds": 44.3,
+      "seconds": 45.3,
       "facts": {
         "order": [
           "transaction",
@@ -314,19 +314,19 @@
       "code": "S21",
       "title": "Transaction Processing killed mid-load: no money lost or created",
       "passed": true,
-      "seconds": 24.5,
+      "seconds": 24.6,
       "facts": {
-        "acknowledged": 66,
+        "acknowledged": 67,
         "acknowledged_but_missing": 0,
         "committed_without_acknowledgement": 0,
         "outcomes": {
-          "ok": 66,
+          "ok": 67,
           "rejected": 0,
-          "failed": 64
+          "failed": 63
         },
         "after": {
-          "transactions_completed": 651,
-          "transactions_failed": 171,
+          "transactions_completed": 545,
+          "transactions_failed": 195,
           "transactions_processing": 0,
           "open_holds": 0,
           "payments_authorized_not_settled": 0
@@ -338,19 +338,19 @@
       "code": "S22",
       "title": "Database killed mid-load: no money lost or created",
       "passed": true,
-      "seconds": 26.6,
+      "seconds": 26.7,
       "facts": {
-        "acknowledged": 84,
+        "acknowledged": 78,
         "acknowledged_but_missing": 0,
         "committed_without_acknowledgement": 0,
         "outcomes": {
-          "ok": 84,
+          "ok": 78,
           "rejected": 0,
-          "failed": 62
+          "failed": 68
         },
         "after": {
-          "transactions_completed": 739,
-          "transactions_failed": 172,
+          "transactions_completed": 627,
+          "transactions_failed": 202,
           "transactions_processing": 0,
           "open_holds": 0,
           "payments_authorized_not_settled": 0
@@ -362,7 +362,7 @@
       "code": "S23",
       "title": "Observed service calls match the declared dependency map exactly",
       "passed": true,
-      "seconds": 10.2,
+      "seconds": 10.1,
       "facts": {
         "observed": 14,
         "declared": 14

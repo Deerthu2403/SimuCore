@@ -1,10 +1,11 @@
 import {
-  BufferGeometry, CanvasTexture, DataTexture, DynamicDrawUsage, Float32BufferAttribute, FloatType, Group,
+  BufferGeometry, CanvasTexture, Color, DataTexture, DynamicDrawUsage, Float32BufferAttribute, FloatType, Group,
   InstancedBufferAttribute, InstancedBufferGeometry, InstancedMesh, LinearFilter, LinearMipmapLinearFilter,
   Matrix4, Mesh, NearestFilter, PlaneGeometry, RGBAFormat, type IUniform, type Material,
 } from "three";
 import { ICONS, ICON_NAMES, iconOf, type IconName } from "../twin/icons";
 import { COMPONENT_TYPES, type ComponentType, type Status } from "../twin/types";
+import { AI_COLOR } from "../twin/ai";
 import { STATUS } from "../twin/format";
 import { archetype } from "./archetypes";
 import { SIZE } from "./layout";
@@ -126,7 +127,17 @@ const SIGN: Partial<Record<Status, IconName>> = {
   warning: "triangle", overloaded: "gauge", failed: "cross", recovering: "cycle", unknown: "question",
 };
 
-/** Rings on the floor, plates and warning signs: three quads per component in two draw calls. */
+const linear = (hex: string): [number, number, number] => {
+  const c = new Color(hex);
+  return [c.r, c.g, c.b];
+};
+const ANOMALY = linear(AI_COLOR.anomaly);
+const RISK = linear(AI_COLOR.risk);
+
+/** Quads per component: plate, warning sign, and the two opinions of the AI. */
+const QUADS = 4;
+
+/** Rings on the floor, plates and signs of all components: two draw calls. */
 class Marks {
   readonly rings: Mesh;
   readonly plates: Mesh;
@@ -134,6 +145,7 @@ class Marks {
   private color = attribute(0, 3);
   private fx = attribute(0, 4);
   private fx2 = attribute(0, 2);
+  private ai = attribute(0, 2);
   private pPos: InstancedBufferAttribute;
   private pColor: InstancedBufferAttribute;
   private pFx: InstancedBufferAttribute;
@@ -145,17 +157,18 @@ class Marks {
     this.color = attribute(n, 3);
     this.fx = attribute(n, 4);
     this.fx2 = attribute(n, 2);
-    this.rings = plain(quads(n, { iPlace: this.place_, iColor: this.color, iFx: this.fx, iFx2: this.fx2 }), ringMaterial(), 2);
-    this.pPos = attribute(n * 2, 4);
-    this.pColor = attribute(n * 2, 3);
-    this.pFx = attribute(n * 2, 4);
-    this.pWhat = attribute(n * 2, 2);
+    this.ai = attribute(n, 2);
+    this.rings = plain(quads(n, { iPlace: this.place_, iColor: this.color, iFx: this.fx, iFx2: this.fx2, iAi: this.ai }), ringMaterial(), 2);
+    this.pPos = attribute(n * QUADS, 4);
+    this.pColor = attribute(n * QUADS, 3);
+    this.pFx = attribute(n * QUADS, 4);
+    this.pWhat = attribute(n * QUADS, 2);
     this.plates = plain(
-      quads(n * 2, { iPos: this.pPos, iColor: this.pColor, iFx: this.pFx, iWhat: this.pWhat }),
+      quads(n * QUADS, { iPos: this.pPos, iColor: this.pColor, iFx: this.pFx, iWhat: this.pWhat }),
       plateMaterial({ value: iconAtlas() }), 6);
     nodes.forEach((x, i) => {
       const icon = iconOf({ type: x.type, attributes: { service: x.bankService } });
-      this.pWhat.setXY(i * 2, iconIndex(icon), 0);
+      this.pWhat.setXY(i * QUADS, iconIndex(icon), 0);
     });
   }
 
@@ -167,17 +180,28 @@ class Marks {
       this.color.setXYZ(i, r, g, b);
       this.fx.setXYZW(i, code, n.load, n.visible, n.highlight);
       this.fx2.setXY(i, Math.min(100, clock - n.flashAt), n.seed);
+      this.ai.setXY(i, n.anomaly, n.risk);
       const y = n.size.h + 0.62;
-      this.pPos.setXYZW(i * 2, n.x, y, n.z, 0.95);
-      this.pColor.setXYZ(i * 2, r, g, b);
-      this.pFx.setXYZW(i * 2, code, n.visible, n.highlight, n.seed);
+      const q = i * QUADS;
+      this.pPos.setXYZW(q, n.x, y, n.z, 0.95);
+      this.pColor.setXYZ(q, r, g, b);
+      this.pFx.setXYZW(q, code, n.visible, n.highlight, n.seed);
       const sign = SIGN[n.status];
-      this.pPos.setXYZW(i * 2 + 1, n.x, y + 0.92, n.z, sign ? (n.status === "failed" || n.status === "overloaded" ? 0.72 : 0.5) : 0.0001);
-      this.pColor.setXYZ(i * 2 + 1, r, g, b);
-      this.pFx.setXYZW(i * 2 + 1, code, sign ? n.visible : 0, n.highlight, n.seed);
-      this.pWhat.setXY(i * 2 + 1, sign ? iconIndex(sign) : 0, 1);
+      this.pPos.setXYZW(q + 1, n.x, y + 0.92, n.z, sign ? (n.status === "failed" || n.status === "overloaded" ? 0.72 : 0.5) : 0.0001);
+      this.pColor.setXYZ(q + 1, r, g, b);
+      this.pFx.setXYZW(q + 1, code, sign ? n.visible : 0, n.highlight, n.seed);
+      this.pWhat.setXY(q + 1, sign ? iconIndex(sign) : 0, 1);
+      // what the AI thinks stands beside the plate, never in place of the status
+      this.pPos.setXYZW(q + 2, n.x, y, n.z, 0.72);
+      this.pColor.setXYZ(q + 2, ...RISK);
+      this.pFx.setXYZW(q + 2, 0, n.risk > 0.02 ? n.visible : 0, n.highlight, n.seed);
+      this.pWhat.setXY(q + 2, iconIndex("forecast"), 2);
+      this.pPos.setXYZW(q + 3, n.x, y, n.z, 0.72);
+      this.pColor.setXYZ(q + 3, ...ANOMALY);
+      this.pFx.setXYZW(q + 3, 0, n.anomaly > 0.02 ? n.visible : 0, n.highlight, n.seed);
+      this.pWhat.setXY(q + 3, iconIndex("anomaly"), 3);
     });
-    for (const a of [this.place_, this.color, this.fx, this.fx2, this.pPos, this.pColor, this.pFx, this.pWhat]) a.needsUpdate = true;
+    for (const a of [this.place_, this.color, this.fx, this.fx2, this.ai, this.pPos, this.pColor, this.pFx, this.pWhat]) a.needsUpdate = true;
   }
 
   dispose(): void {

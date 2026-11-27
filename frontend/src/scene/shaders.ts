@@ -125,16 +125,16 @@ export function ringMaterial(): ShaderMaterial {
     vertexShader: /* glsl */ `
       ${VERT_COMMON}
       attribute vec4 iPlace; // x, z, half width, half depth
-      attribute vec3 iColor; attribute vec4 iFx; attribute vec2 iFx2;
-      varying vec2 vP; varying vec2 vHalf; varying vec3 vColor; varying vec4 vFx; varying vec2 vFx2;
+      attribute vec3 iColor; attribute vec4 iFx; attribute vec2 iFx2; attribute vec2 iAi; // anomaly, risk
+      varying vec2 vP; varying vec2 vHalf; varying vec3 vColor; varying vec4 vFx; varying vec2 vFx2; varying vec2 vAi;
       void main() {
         vec2 reach = iPlace.zw + 1.1;
-        vP = position.xy * 2. * reach; vHalf = iPlace.zw; vColor = iColor; vFx = iFx; vFx2 = iFx2;
+        vP = position.xy * 2. * reach; vHalf = iPlace.zw; vColor = iColor; vFx = iFx; vFx2 = iFx2; vAi = iAi;
         gl_Position = projectionMatrix * viewMatrix * vec4(iPlace.x + vP.x, .015, iPlace.y - vP.y, 1.);
       }`,
     fragmentShader: /* glsl */ `
       ${COMMON}
-      varying vec2 vP; varying vec2 vHalf; varying vec3 vColor; varying vec4 vFx; varying vec2 vFx2;
+      varying vec2 vP; varying vec2 vHalf; varying vec3 vColor; varying vec4 vFx; varying vec2 vFx2; varying vec2 vAi;
       float box(vec2 p, vec2 b, float r) { vec2 q = abs(p) - b + r; return length(max(q, 0.)) + min(max(q.x, q.y), 0.) - r; }
       void main() {
         float code = floor(vFx.x + .5);
@@ -158,6 +158,15 @@ export function ringMaterial(): ShaderMaterial {
         float corner = (1. - smoothstep(.035, .035 + px, abs(max(q.x, q.y)))) * step(-.42, min(q.x, q.y));
         vec3 c = mix(vColor, vec3(.55, .82, 1.), corner * vFx.w);
         a = max(a, corner * vFx.w);
+        // the AI's opinions lie outside the status ring and have their own colours
+        float turn = atan(vP.y / vHalf.y, vP.x / vHalf.x) / 6.28318 + .5;
+        float an = (1. - smoothstep(.04, .04 + px, abs(d - .5))) * step(.02, vAi.x)
+                 * step(.45, fract(turn * 14. + uTime * uMotion * .22)); // anomaly: a ring of moving dashes
+        c = mix(c, vec3(.44, .26, 1.) * (.9 + vAi.x), an); a = max(a, an * .95);
+        float ri = (1. - smoothstep(.055, .055 + px, abs(d - .72))) * step(.02, vAi.y); // risk: an arc as long as it is probable
+        float full = step(fract(turn + .25), vAi.y);
+        float beatR = uMotion > .5 ? .75 + .25 * sin(uTime * 4.) : 1.;
+        c = mix(c, vec3(1., .22, .55) * (full > .5 ? 1.25 * beatR : .25), ri); a = max(a, ri * (full > .5 ? 1. : .45));
         a *= vFx.z * (1. - smoothstep(.8, 1.05, d));
         if (a < .004) discard;
         gl_FragColor = vec4(staleOf(c) * (1. + .5 * line), a);
@@ -177,17 +186,18 @@ export function plateMaterial(atlas: IUniform): ShaderMaterial {
       attribute vec4 iPos; // x, y, z, size
       attribute vec3 iColor;
       attribute vec4 iFx; // status code, visible, highlight, seed
-      attribute vec2 iWhat; // icon, 0 = plate / 1 = sign
+      attribute vec2 iWhat; // icon, 0 = plate / 1 = sign / 2, 3 = opinion of the AI
       varying vec2 vUvP; varying vec3 vColor; varying vec4 vFx; varying vec2 vWhat;
       void main() {
         vUvP = uv; vColor = iColor; vFx = iFx; vWhat = iWhat;
         vec3 at = iPos.xyz;
-        if (iWhat.y > .5) at.y += .1 * sin(uTime * 3.2 + iFx.w * 6.) * uMotion;
+        if (iWhat.y > .5 && iWhat.y < 1.5) at.y += .1 * sin(uTime * 3.2 + iFx.w * 6.) * uMotion;
         vec4 mv = viewMatrix * vec4(at, 1.);
         float size = iPos.w * (1. + .12 * iFx.z) * step(.03, iFx.y);
         // never smaller than a readable symbol, never a wall close up
         size = clamp(size, -mv.z * .014, -mv.z * .075);
         mv.xy += position.xy * size * step(.03, iFx.y);
+        if (iWhat.y > 1.5) mv.x += (iWhat.y > 2.5 ? -1. : 1.) * clamp(.95, -mv.z * .02, -mv.z * .1); // beside the plate
         mv.z += .25;
         gl_Position = projectionMatrix * mv;
       }`,

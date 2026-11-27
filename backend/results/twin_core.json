@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-25T08:26:28+00:00",
+  "run_at": "2026-11-26T08:35:10+00:00",
   "bank": "local processes",
   "passed": 22,
   "total": 22,
@@ -29,10 +29,10 @@
       "code": "D02",
       "title": "Twin metrics equal the monitoring data they came from, value by value",
       "passed": true,
-      "seconds": 26.0,
+      "seconds": 26.1,
       "facts": {
         "moments": 8,
-        "values_compared": 1345,
+        "values_compared": 1324,
         "differences": 0
       },
       "error": null
@@ -47,8 +47,8 @@
           "truth": 15,
           "twin": 15.0
         },
-        "normal_ms": 4.3256,
-        "with_200ms_delay": 210.4927
+        "normal_ms": 4.3018,
+        "with_200ms_delay": 209.9633
       },
       "error": null
     },
@@ -56,7 +56,7 @@
       "code": "D04",
       "title": "Healthy stays healthy: no status change in 60 s of normal traffic",
       "passed": true,
-      "seconds": 95.3,
+      "seconds": 95.6,
       "facts": {
         "seconds": 60,
         "status_changes": 0
@@ -67,9 +67,9 @@
       "code": "D05",
       "title": "Failed and recovering: every service is killed and restarted once",
       "passed": true,
-      "seconds": 145.2,
+      "seconds": 144.9,
       "facts": {
-        "slowest_failed_s": 2.5,
+        "slowest_failed_s": 2.1,
         "slowest_recovering_s": 2.1,
         "recovery_phase_s": [
           7.9,
@@ -84,7 +84,7 @@
       "passed": true,
       "seconds": 16.2,
       "facts": {
-        "downtime_s": 1.7,
+        "downtime_s": 2.1,
         "errors_s": 4.2,
         "root_cause": [
           "store-bank"
@@ -96,11 +96,11 @@
       "code": "D07",
       "title": "Warning: slower than normal because of something else, not overloaded",
       "passed": true,
-      "seconds": 45.7,
+      "seconds": 43.7,
       "facts": {
-        "seen_after_s": 3.7,
+        "seen_after_s": 3.8,
         "reason": "p95 latency is 198 ms, normal is up to 25 ms",
-        "healthy_again_s": 14.1
+        "healthy_again_s": 13.7
       },
       "error": null
     },
@@ -108,11 +108,11 @@
       "code": "D08",
       "title": "Overloaded: CPU, memory, and requests piling up",
       "passed": true,
-      "seconds": 35.0,
+      "seconds": 43.0,
       "facts": {
-        "cpu_s": 11.2,
-        "memory_s": 3.7,
-        "queue_s": 4.2
+        "cpu_s": 13.7,
+        "memory_s": 3.8,
+        "queue_s": 3.7
       },
       "error": null
     },
@@ -120,7 +120,7 @@
       "code": "D09",
       "title": "Unknown: a hung service is neither failed nor healthy",
       "passed": true,
-      "seconds": 32.9,
+      "seconds": 33.2,
       "facts": {
         "unknown_after_s": 2.9,
         "path": [
@@ -134,7 +134,7 @@
       "code": "D10",
       "title": "Bank database: its failure and exhaustion are distinct from the service in front",
       "passed": true,
-      "seconds": 38.0,
+      "seconds": 35.6,
       "facts": {
         "refused_s": 5.8,
         "pool_7_of_8_s": 3.7,
@@ -146,7 +146,7 @@
       "code": "D11",
       "title": "Dependencies: one crash under load, one root cause, network not blamed",
       "passed": true,
-      "seconds": 60.0,
+      "seconds": 60.1,
       "facts": {
         "affected": {
           "bank-authentication": "warning",
@@ -154,10 +154,10 @@
           "bank-account": "failed",
           "bank-transaction": "failed",
           "bank-payment": "warning",
-          "bank-fraud": "warning"
+          "bank-fraud": "failed"
         },
         "root_cause": "bank-database",
-        "failed_connections": 3,
+        "failed_connections": 4,
         "network": "healthy"
       },
       "error": null
@@ -166,17 +166,17 @@
       "code": "D12",
       "title": "Connections fail and recover with their target; the circuit breaker is visible",
       "passed": true,
-      "seconds": 49.9,
+      "seconds": 50.0,
       "facts": {
-        "failed_after_s": 8.3,
-        "circuit": 1.0,
+        "failed_after_s": 10.4,
+        "circuit": 2.0,
         "path": [
           "warning",
           "failed",
           "recovering",
           "healthy"
         ],
-        "healthy_again_s": 19.5
+        "healthy_again_s": 17.5
       },
       "error": null
     },
@@ -184,7 +184,7 @@
       "code": "D13",
       "title": "Chaos: random faults against a known truth; the twin must agree every time",
       "passed": true,
-      "seconds": 202.1,
+      "seconds": 202.0,
       "facts": {
         "actions": {
           "downtime": 3,
@@ -201,12 +201,12 @@
       "code": "D14",
       "title": "WebSocket: 40 clients rebuild the twin from updates alone, during faults",
       "passed": true,
-      "seconds": 50.2,
+      "seconds": 50.3,
       "facts": {
         "clients": 40,
-        "updates_each": 25,
+        "updates_each": 50,
         "lost": 0,
-        "median_update_kb": 28.5
+        "median_update_kb": 19.9
       },
       "error": null
     },
@@ -214,10 +214,10 @@
       "code": "D15",
       "title": "Update delay: from measurement to twin",
       "passed": true,
-      "seconds": 30.7,
+      "seconds": 30.6,
       "facts": {
-        "median_s": 0.001,
-        "worst_s": 0.036,
+        "median_s": 0.002,
+        "worst_s": 0.032,
         "observations_in_30_s": 15
       },
       "error": null
@@ -226,10 +226,10 @@
       "code": "D16",
       "title": "Monitoring stopped: everything becomes unknown; afterwards nothing is made up",
       "passed": true,
-      "seconds": 27.2,
+      "seconds": 28.8,
       "facts": {
-        "unknown_after_s": 6.6,
-        "live_again_s": 3.3,
+        "unknown_after_s": 6.7,
+        "live_again_s": 4.2,
         "payment": [
           "unknown",
           "recovering",
@@ -242,9 +242,9 @@
       "code": "D17",
       "title": "Prometheus stopped: monitoring is alive but blind, and the twin knows",
       "passed": true,
-      "seconds": 22.8,
+      "seconds": 22.9,
       "facts": {
-        "unknown_after_s": 12.9
+        "unknown_after_s": 13.4
       },
       "error": null
     },
@@ -263,9 +263,9 @@
         ],
         "seconds": [
           1.8,
-          13.9,
-          8.0,
-          27.5
+          14.0,
+          8.1,
+          27.3
         ]
       },
       "error": null
@@ -274,7 +274,7 @@
       "code": "D19",
       "title": "Database stopped for 25 s: the twin continues and no history is lost",
       "passed": true,
-      "seconds": 42.9,
+      "seconds": 40.8,
       "facts": {
         "noticed_without_database_s": 2.1,
         "recorded_afterwards": [
@@ -294,13 +294,14 @@
       "facts": {
         "synchronised_after_restart_s": 1.3,
         "timeline": [
+          "recovering",
           "healthy",
           "untracked",
           "failed",
           "recovering",
           "healthy"
         ],
-        "total_s": 16.8
+        "total_s": 16.9
       },
       "error": null
     },

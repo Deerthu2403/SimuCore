@@ -25,8 +25,8 @@ interface ViewStore {
   right: boolean;
   bottom: boolean;
   leftTab: "overview" | "health";
-  rightTab: "metrics" | "dependencies" | "events";
-  bottomTab: "alerts" | "events";
+  rightTab: "metrics" | "dependencies" | "events" | "ai";
+  bottomTab: "alerts" | "events" | "ai";
   /** The rig consumes requests by sequence number. */
   camera: { seq: number; req: CameraRequest };
   select: (s: Selection, opts?: { fly?: boolean }) => void;
