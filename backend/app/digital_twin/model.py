@@ -162,6 +162,8 @@ class Change:
     links: frozenset[str] = frozenset()
     transitions: tuple[Transition, ...] = ()
     structure_changed: bool = False
+    #: propagation events opened or closed (impact.Event)
+    events: tuple = ()
 
     def __bool__(self) -> bool:
-        return bool(self.components or self.links or self.structure_changed)
+        return bool(self.components or self.links or self.structure_changed or self.events)

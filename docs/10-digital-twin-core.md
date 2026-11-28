@@ -202,6 +202,14 @@ checked like any other input, expire after 10 s, are accepted only for the same 
 **never change a status**. `summary` has `ai`, `anomalies` and `predicted`;
 `/api/v2/twin/insights` lists all of them.
 
+### Failure propagation
+
+Each component also has an `impact` (doc 13): whether a current failure may reach it, how strongly,
+along which chain, and whether its own measurements confirm it. Links carry
+`display.propagation` and `display.propagation_step`, the summary `propagation`. Propagation events
+are stored in `propagation_event` and judged 60 s after they opened. Endpoints under
+`/api/v2/twin/propagation`.
+
 ## 7. Configuration
 
 | Variable | Default | |

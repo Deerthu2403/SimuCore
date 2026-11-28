@@ -24,6 +24,7 @@ from app.digital_twin.health import (
     store_findings,
     worst,
 )
+from app.digital_twin.impact import ImpactTracker
 from app.digital_twin.insights import Insight, InsightMessage
 from app.digital_twin.model import (
     Change,
@@ -69,6 +70,8 @@ class DigitalTwin:
         #: what the AI service thinks, per component; never part of a status
         self.insights: dict[str, Insight] = {}
         self.insights_at: datetime | None = None
+        #: how the current failures may spread, and what earlier ones did
+        self.impact = ImpactTracker()
 
     # ------------------------------------------------------------------ changing
     def apply(self, obs: Observation, now: datetime | None = None) -> Change:
@@ -100,7 +103,7 @@ class DigitalTwin:
         for lid in self.blueprint.links:
             if self.blueprint.links[lid].kind is not LinkKind.CALLS:
                 self._update_link(lid, obs, now, transitions)
-        change = self._change(before, transitions, restructured)
+        change = self._change(before, transitions, restructured, now)
         if not change:
             self.version -= 1  # the version counts changes, not messages
         return replace(change, version=self.version)
@@ -120,7 +123,7 @@ class DigitalTwin:
             for oid, state in states.items():
                 self._conclude(kind, oid, state, None,
                                f"no monitoring data for {seconds:.0f} s", now, transitions)
-        return self._change(before, transitions, False)
+        return self._change(before, transitions, False, now)
 
     # ---------------------------------------------------------------- opinions of the AI
     def apply_insights(self, m: InsightMessage, now: datetime) -> Change:
@@ -177,6 +180,7 @@ class DigitalTwin:
     def _forget(self) -> None:
         self._trackers.clear()
         self.insights, self.insights_at = {}, None
+        self.impact.analysis = None
         for state in (*self.components.values(), *self.links.values()):
             state.status, state.since, state.previous = Status.UNKNOWN, None, None
             state.metrics, state.findings, state.quality = {}, (), "none"
@@ -384,7 +388,9 @@ class DigitalTwin:
         else:
             state.reason = reason
 
-    def _change(self, before: dict, transitions: list[Transition], restructured: bool) -> Change:
+    def _change(self, before: dict, transitions: list[Transition], restructured: bool,
+                now: datetime | None = None) -> Change:
+        events = tuple(self.impact.update(self, now or datetime.now(UTC)))
         after = self._fingerprints()
         changed = {k for k, v in after.items() if before.get(k) != v}
         components = {i for k, i in changed if k == "component"}
@@ -392,7 +398,17 @@ class DigitalTwin:
             components |= self._shows(t)
         return Change(self.version, frozenset(components),
                       frozenset(i for k, i in changed if k == "link"), tuple(transitions),
-                      restructured)
+                      restructured, events)
+
+    def tick(self, now: datetime) -> Change:
+        """Close propagation events whose time is over, also while nothing else happens."""
+        if not any(now - e.opened_at >= timedelta(seconds=60) for e in self.impact.open):
+            return Change(self.version)
+        self.version += 1
+        change = self._change(self._fingerprints(), [], False, now)
+        if not change:
+            self.version -= 1
+        return change
 
     def _shows(self, t: Transition) -> set[str]:
         """Components whose public view contains the status that changed."""
@@ -404,10 +420,14 @@ class DigitalTwin:
         return neighbours | set(self.reachable(t.object_id, "downstream"))
 
     def _fingerprints(self) -> dict[tuple[str, str], tuple]:
-        return {(kind, oid): (s.status, s.reason, s.quality, s.findings,
-                              tuple(sorted(s.metrics.items())))
-                for kind, group in (("component", self.components), ("link", self.links))
-                for oid, s in group.items()}
+        impact = self.impact
+        out = {("component", c): (s.status, s.reason, s.quality, s.findings,
+                                  tuple(sorted(s.metrics.items())), impact.key(self, c))
+               for c, s in self.components.items()}
+        out |= {("link", k): (s.status, s.reason, s.quality, s.findings,
+                              tuple(sorted(s.metrics.items())), impact.link_key(k))
+                for k, s in self.links.items()}
+        return out
 
     # -------------------------------------------------------------------- analysis
     def root_causes(self, cid: str) -> list[str]:

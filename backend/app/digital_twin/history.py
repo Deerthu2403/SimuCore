@@ -6,6 +6,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import uuid
 from collections import deque
 from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
@@ -30,6 +31,10 @@ STRUCTURE = ("INSERT INTO twin_structure (checksum, components, links) VALUES ($
 TRANSITION = ("INSERT INTO twin_transition (ts, run_id, version, object_kind, object_id, "
               "from_status, to_status, reason, root_causes, origin) "
               "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT DO NOTHING")
+EVENT = ("INSERT INTO propagation_event (id, opened_at, run_id, origins, new_origins, graph, "
+         "level, affected, expected, business_impact, predicted, report, origin) "
+         "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) ON CONFLICT DO NOTHING")
+EVENT_CLOSED = "UPDATE propagation_event SET closed_at = $2, outcome = $3 WHERE id = $1"
 SNAPSHOT = ("INSERT INTO twin_snapshot (ts, run_id, version, structure, origin, statuses) "
             "VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING")
 
@@ -49,6 +54,7 @@ class TwinHistory:
         self._last_snapshot: datetime | None = None
         self._last_prune: datetime | None = None
         self._wake = asyncio.Event()
+        self._stored: set[str] = set()  # propagation events already queued
 
     # ------------------------------------------------------------------- recording
     def record(self, twin: DigitalTwin, change: Change) -> None:
@@ -57,6 +63,16 @@ class TwinHistory:
                 t.ts, twin.run_id, t.version, t.object_kind, t.object_id,
                 t.from_status.value if t.from_status else None, t.to_status.value, t.reason[:500],
                 list(t.root_causes), t.origin))
+        for e in change.events:
+            if e.id not in self._stored:
+                r = e.report
+                self._push(EVENT, (uuid.UUID(e.id), e.opened_at, twin.run_id, list(e.origins),
+                                   list(e.new), r["graph"], r["level"], r["affected"],
+                                   r["expected_affected"],
+                                   r["business_impact"], list(e.predicted), _dump(r), twin.origin))
+                self._stored.add(e.id)
+            if e.closed_at is not None:
+                self._push(EVENT_CLOSED, (uuid.UUID(e.id), e.closed_at, _dump(e.outcome)))
         if change.structure_changed:
             self.snapshot(twin)
         else:
@@ -178,6 +194,19 @@ class TwinHistory:
         return [{k: r[k] for k in ("ts", "version", "object_kind", "object_id", "from_status",
                                    "to_status", "reason", "root_causes", "origin")}
                 | {"run_id": str(r["run_id"])} for r in rows]
+
+    async def propagation(self, start: datetime, end: datetime, component: str | None,
+                          limit: int) -> list[dict]:
+        rows = await self._fetch(
+            "SELECT * FROM propagation_event WHERE opened_at >= $1 AND opened_at < $2 AND "
+            "($3::text IS NULL OR $3 = ANY(origins) OR $3 = ANY(predicted)) "
+            "ORDER BY opened_at DESC LIMIT $4", start, end, component, limit)
+        return [{"id": str(r["id"]), "opened_at": r["opened_at"], "closed_at": r["closed_at"],
+                 "origins": list(r["origins"]), "new_origins": list(r["new_origins"]),
+                 "level": r["level"], "affected": r["affected"], "expected": r["expected"],
+                 "business_impact": r["business_impact"], "predicted": list(r["predicted"]),
+                 "outcome": json.loads(r["outcome"]) if r["outcome"] else None,
+                 "report": json.loads(r["report"]), "run_id": str(r["run_id"])} for r in rows]
 
     async def state_at(self, ts: datetime) -> dict[str, Any] | None:
         """The twin as it was at ``ts``; None if it was not running then."""

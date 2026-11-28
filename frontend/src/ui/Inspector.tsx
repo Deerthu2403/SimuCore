@@ -7,6 +7,7 @@ import { useComponent, useFreshness, useLink, useTwin, useUnits } from "../twin/
 import type { DependencyRef, TwinComponent, TwinLink } from "../twin/types";
 import { useView } from "../twin/view";
 import { AiTab } from "./Ai";
+import { describe, IMPACT_COLOR, impactOf, LEVEL, ROLE, useImpact } from "../twin/impact";
 import { useNow } from "./hooks";
 import { DependencyGraph } from "./DependencyGraph";
 import { EventList } from "./Events";
@@ -79,6 +80,36 @@ function StatusLine({ c }: { c: TwinComponent }) {
             <button type="button" className="linklike" key={r} onClick={() => select({ kind: "component", id: r }, { fly: true })}>{names?.[r]?.name ?? r}</button>
           ))}
         </p>
+      )}
+      <ImpactBox c={c} />
+    </div>
+  );
+}
+
+/** How a failure reaches this component: the dependency chain, the estimated impact, the evidence. */
+function ImpactBox({ c }: { c: TwinComponent }) {
+  const sim = useImpact((s) => s.simulation);
+  const names = useTwin((s) => s.mirror?.components);
+  const i = impactOf(c, sim);
+  const { select } = useView.getState();
+  if (!i || !names) return null;
+  const name = (x: string) => names[x]?.name.replace(/ Service$/, "") ?? x;
+  return (
+    <div className="impact-box" data-role={i.role} data-testid="inspector-impact">
+      <b style={{ color: IMPACT_COLOR }}>{sim ? "Simulated " : ""}{i.role === "origin" ? (sim ? "failure" : "Failure origin") : ROLE[i.role].label}</b>
+      {i.role !== "origin" && <> · {describe(i, (x) => names[x]?.name ?? x)}</>}
+      <div className="muted">{i.role === "origin"
+        ? `its failure may spread to ${sim ? sim.affected : "the components that depend on it"}`
+        : `${ROLE[i.role].meaning}; ${LEVEL[i.level].meaning}`}</div>
+      {i.chain.length > 1 && (
+        <div className="chain" data-testid="impact-chain">
+          {i.chain.map((x, n) => (
+            <span key={x}>
+              {n > 0 && "→ "}
+              <button type="button" className="linklike" onClick={() => select({ kind: "component", id: x }, { fly: true })}>{name(x)}</button>
+            </span>
+          ))}
+        </div>
       )}
     </div>
   );

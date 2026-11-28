@@ -156,9 +156,14 @@ check("U01", "The scene draws every component and connection of the twin, with t
     types[c.type] = (types[c.type] ?? 0) + 1;
     await until(`${c.id} like the twin`, async () => {
       const [n, l, a] = [await node(page, c.id), await hook(page, "label", c.id), await comp(c.id)];
-      return n.status === a.status && n.color === COLOR[a.status] && n.visible === 1 && l.status === a.status && l.text.includes(a.name.replace(/ Service$/, ""));
+      // a label that would cover another one is hidden by design; a shown one must be right
+      return n.status === a.status && n.color === COLOR[a.status] && n.visible === 1 && l.status === a.status
+        && (!l.shown || l.text.includes(a.name.replace(/ Service$/, "")));
     }, 15);
   }
+  const labels = await Promise.all(t.components.map((c) => hook(page, "label", c.id)));
+  const shownLabels = labels.filter((l) => l.shown).length;
+  ok(shownLabels >= 0.75 * labels.length, `only ${shownLabels} of ${labels.length} names shown`);
   for (const want of ["microservice", "server", "database", "network", "load_balancer", "gateway"]) ok(types[want], `no ${want}`);
   const blank = await page.evaluate(async () => {
     // the picture really contains something: many different colours
@@ -697,7 +702,8 @@ check("U17", "Slow: warning, not overload; the sign appears and the reason is na
   await select(page, id);
   ok((await page.textContent("[data-testid=inspector] .reason")).includes("latency"), "reason");
   ok(await page.$(`[data-testid=alerts] [data-object=${id}][data-status=warning]`), "alert");
-  ok(!(await page.$(`.toast[data-object=${id}]`)), "a warning must not shout");
+  // a status warning makes no message; the AI may still report the anomaly, in its own colour
+  ok(!(await page.$(`.toast[data-object=${id}]:not([data-status=anomaly]):not([data-status=predicted])`)), "a warning must not shout");
   await bank("clear");
   await until("healthy", async () => (await node(page, id)).status === "healthy", 60, 200);
   await reset(page);
@@ -1316,6 +1322,129 @@ check("U36", "AI service off: the page says so, no marks, everything else works;
   return { said_after_s: said, back_after_s: back };
 });
 
+// ------------------------------------------------------------------ propagation
+/** Pixels of the propagation colour (teal) in a square around a point of the page. */
+async function tealAround(page, p, half = 70) {
+  const clip = { x: Math.max(0, p.x - half), y: Math.max(0, p.y - half), width: half * 2, height: half * 2 };
+  const png = (await page.screenshot({ clip })).toString("base64");
+  return page.evaluate(async (b64) => {
+    const bmp = await createImageBitmap(await (await fetch(`data:image/png;base64,${b64}`)).blob());
+    const c = new OffscreenCanvas(bmp.width, bmp.height).getContext("2d");
+    c.drawImage(bmp, 0, 0);
+    const d = c.getImageData(0, 0, bmp.width, bmp.height).data;
+    let n = 0;
+    for (let i = 0; i < d.length; i += 4) if (d[i] < 120 && d[i + 1] > 150 && d[i + 2] > 130 && Math.abs(d[i + 1] - d[i + 2]) < 60) n++;
+    return n;
+  }, png);
+}
+const role = async (page, id) => (await node(page, id)).role;
+
+check("U37", "Crash: the failure is marked as origin, its dependents as affected, the path animated; event judged afterwards", async (page) => {
+  await settled();
+  await page.keyboard.press("4");
+  await still(page);
+  const tx = await node(page, "bank-transaction");
+  const before = await tealAround(page, tx.screen);
+  same([await role(page, "bank-payment"), await role(page, "bank-transaction")], [0, 0], "roles before");
+  const t0 = Date.now();
+  await bank("kill", "payment");
+  const marked = await until("origin and impact in the scene", async () => (await role(page, "bank-payment")) === 3
+    && (await role(page, "bank-transaction")) >= 1, 20, 50);
+  const twin = await comp("bank-transaction");
+  ok(twin.impact && twin.impact.chain.join() === "bank-payment,bank-transaction", twin.impact);
+  await until("impact like the twin", async () => Math.abs((await node(page, "bank-transaction")).impact - (await comp("bank-transaction")).impact.impact) < 0.02, 5);
+  const w = await wire(page, "bank-transaction->bank-payment");
+  ok(w.propagation > 0.5 && w.step === 1, w);
+  // what Transaction depends on is not affected by its own dependency failing
+  for (const id of ["bank-account", "bank-fraud", "bank-database", "bank-notification"]) same(await role(page, id), 0, id);
+  await until("label", async () => (await hook(page, "label", "bank-transaction")).text.includes("impact"), 5);
+  const label = (await hook(page, "label", "bank-transaction")).text;
+  ok(/(confirmed|predicted) impact: high 60 %, 1 step from Payment Gateway/.test(label), label);
+  await still(page);
+  const during = await tealAround(page, (await node(page, "bank-transaction")).screen);
+  ok(during > before + 40, `no propagation colour around Transaction (${before} -> ${during} pixels)`);
+  await page.screenshot({ path: join(OUT, "3d-propagation.png") });
+  // the panel: live report with chain, event
+  await tab(page, "drawer", 4);
+  await until("live report", () => page.$("[data-testid=impact-current][data-state=live] [data-id=bank-transaction]"), 10);
+  const row = await page.textContent("[data-testid=impact-table] [data-id=bank-transaction]");
+  ok(row.includes("Payment Gateway → Transaction Processing"), row);
+  await page.click("[data-testid=impact-table] [data-id=bank-transaction]");
+  await until("inspector chain", () => page.$("[data-testid=inspector-impact] [data-testid=impact-chain]"), 5);
+  await until("event in the panel", () => page.$("[data-testid=impact-events] .impact-event"), 20, 500);
+  const live = await api("/propagation/events/live");
+  const ev = live.find((e) => e.new_origins.includes("bank-payment") && Date.parse(e.opened_at) >= t0 - 5000);
+  ok(ev && ev.predicted.includes("bank-transaction"), live[0]);
+  await bank("start", "payment");
+  const gone = await until("marks gone", async () => (await role(page, "bank-transaction")) === 0 && (await role(page, "bank-payment")) === 0
+    && (await wire(page, "bank-transaction->bank-payment")).propagation < 0.01, 90, 300);
+  const judged = await until("event judged and stored", async () => {
+    const stored = await api("/propagation/events?minutes=30&limit=20");
+    const e = stored.find((x) => x.id === ev.id);
+    return e?.closed_at && e.outcome;
+  }, 90, 2000);
+  const stored = (await api("/propagation/events?minutes=30&limit=20")).find((x) => x.id === ev.id);
+  await tab(page, "drawer", 1);
+  await page.keyboard.press("1");
+  return { marked_after_s: marked, teal_pixels: [before, during], gone_after_s: gone, judged_after_s: judged, outcome: stored.outcome };
+});
+
+check("U38", "Simulated failure: the scene shows what would happen; the twin and the bank are not touched; back to live", async (page) => {
+  await settled();
+  await tab(page, "drawer", 4);
+  await page.selectOption("[data-testid=impact-select]", "bank-database");
+  await page.click("[data-testid=impact-run]");
+  await until("simulated report", () => page.$("[data-testid=impact-current][data-state=simulated]"), 10);
+  const sim = await api("/propagation/analyze?failed=bank-database");
+  await until("scene shows the simulation", async () => (await role(page, "bank-database")) === 3, 5);
+  for (const r of sim.impacts) {
+    await until(`${r.id} simulated`, async () => {
+      const n = await node(page, r.id);
+      return n.role === 1 && Math.abs(n.impact - r.impact) < 0.02;
+    }, 5);
+  }
+  for (const [id, p] of Object.entries(sim.links)) {
+    const w = await wire(page, id);
+    ok(Math.abs(w.propagation - p.impact) < 0.02 && w.step === p.step, [id, w, p]);
+  }
+  const shown = await page.$$eval("[data-testid=impact-table] tbody tr", (rows) => rows.map((r) => r.dataset.id));
+  same(shown, sim.impacts.map((r) => r.id), "rows");
+  ok((await page.textContent("[data-testid=impact-figures]")).includes(String(sim.affected)), "figures");
+  const lab = await hook(page, "label", "bank-account");
+  ok(lab.text.includes("predicted impact: severe 100 %"), lab);
+  const href = await page.getAttribute("[data-testid=impact-download]", "href");
+  const md = await (await fetch(BASE + href)).text();
+  ok(md.startsWith("# What if Database Service failed") && md.includes("Account Management"), md.slice(0, 200));
+  await page.screenshot({ path: join(OUT, "3d-simulation.png") });
+  // nothing was changed: the database is still healthy, in the twin and in the bank
+  same((await comp("bank-database")).status, "healthy", "twin");
+  same((await api()).summary.propagation.origins, [], "no live propagation");
+  await page.click("[data-testid=impact-clear]");
+  await until("back to live", async () => (await role(page, "bank-database")) === 0 && (await role(page, "bank-account")) === 0, 5);
+  // a row of the critical list simulates that component
+  const crit = await api("/propagation/critical");
+  const first = await page.$eval("[data-testid=impact-critical] tbody tr", (r) => r.dataset.id);
+  same(first, crit.components[0].id, "most critical");
+  await page.click("[data-testid=impact-critical] tbody tr");
+  await until("simulated from the list", async () => (await role(page, first)) === 3, 10);
+  await page.click("[data-testid=impact-clear]");
+  await until("back to live again", async () => (await role(page, first)) === 0, 5);
+  await tab(page, "drawer", 1);
+  return { simulated: sim.affected, links: Object.keys(sim.links).length, most_critical: first };
+});
+
+check("U39", "The engine follows the structure of the twin: graph and ranking come from what the twin holds now", async () => {
+  const [t, g, crit] = [await api(), await api("/propagation/graph"), await api("/propagation/critical?group=all")];
+  same(g.nodes.map((n) => n.id).sort(), t.components.map((c) => c.id).sort(), "nodes");
+  same(g.edges.map((e) => e.id).sort(), t.links.map((k) => k.id).sort(), "edges");
+  for (const e of g.edges) {
+    const k = t.links.find((x) => x.id === e.id);
+    same([e.kind, e.mode, e.weight], [k.kind, k.mode, k.weight], e.id);
+  }
+  same(crit.components.length, t.components.length, "every component ranked");
+  return { nodes: g.nodes.length, edges: g.edges.length, checksum: g.checksum };
+});
+
 // ---------------------------------------------------------------------- main
 const wanted = process.argv.slice(2);
 const results = [];
@@ -1325,6 +1454,8 @@ if (/"alive"/.test(state)) {
   console.error("The bank is already running. Stop it first (bankctl.py down).");
   process.exit(2);
 }
+// fresh synthetic data: long runs pay out the accounts, and then no payment gets through
+await bank("reset");
 await bank("up");
 traffic();
 browser = await chromium.launch({ channel: "msedge", headless: true, args: GPU });

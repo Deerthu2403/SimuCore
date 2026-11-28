@@ -51,6 +51,8 @@ GRANT EXECUTE ON FUNCTION ensure_metric_partitions(integer),
 GRANT USAGE ON SCHEMA public TO twin_writer;
 GRANT SELECT ON metric_sample, infra_metric_sample, link_metric_sample TO twin_writer;
 GRANT SELECT, INSERT ON twin_structure, twin_transition, twin_snapshot TO twin_writer;
+GRANT SELECT, INSERT ON propagation_event TO twin_writer;
+GRANT UPDATE (closed_at, outcome) ON propagation_event TO twin_writer;
 GRANT EXECUTE ON FUNCTION prune_twin_history(integer) TO twin_writer;
 
 -- The AI service records its own opinions. It cannot see measurements in the database (it gets them

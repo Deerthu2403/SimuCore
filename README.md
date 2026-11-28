@@ -20,7 +20,7 @@ every recommendation.
 |---|---|---|---|
 | Real-time infrastructure monitoring | `backend/app/twin`, `adapters` | 1 | ✅ working (simulated source) |
 | Interactive 3D digital twin | `frontend` | 1 / 5 | ✅ live 3D data centre on the twin core ([doc 11](docs/11-3d-interface.md)) |
-| Dependency-aware failure propagation | `backend/app/propagation` | 1 / 4 | ✅ v1 (weighted max-product BFS) |
+| Dependency-aware failure propagation | `backend/app/digital_twin/propagation.py` | 1 / 7 | ✅ weighted BFS on the live twin's graph, 3D path, simulation, events judged against measurements ([doc 13](docs/13-failure-propagation.md)) |
 | Explainable recommendations | `backend/app/explain`, `recommendation` | 1 / 5 | ✅ propagation explanations; rest in P5 |
 | AI anomaly & failure prediction | `intelligence` | 3 / 6 | ✅ Isolation Forest and XGBoost, validated on the running bank ([doc 12](docs/12-ai-module.md)) |
 | What-if simulation (SimPy) | `backend/app/simulation/whatif.py` | 4 | 📐 contract defined |
@@ -75,6 +75,7 @@ SimuCore/
 10. [Digital twin core](docs/10-digital-twin-core.md)
 11. [Interactive 3D interface](docs/11-3d-interface.md)
 12. [Anomaly detection and failure prediction](docs/12-ai-module.md)
+13. [Failure propagation analysis](docs/13-failure-propagation.md)
 
 ## Getting started (local, Windows PowerShell)
 
@@ -169,3 +170,4 @@ backend\.venv\Scripts\python infra/tests/stack_check.py   # the whole Docker sta
 Latest stack results: [infra/results/stack.md](infra/results/stack.md).
 
 AI module (training, recordings, live check): see [doc 12](docs/12-ai-module.md).
+Failure propagation (live check on the real bank): see [doc 13](docs/13-failure-propagation.md).

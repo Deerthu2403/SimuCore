@@ -146,6 +146,7 @@ class Marks {
   private fx = attribute(0, 4);
   private fx2 = attribute(0, 2);
   private ai = attribute(0, 2);
+  private imp = attribute(0, 2);
   private pPos: InstancedBufferAttribute;
   private pColor: InstancedBufferAttribute;
   private pFx: InstancedBufferAttribute;
@@ -158,7 +159,8 @@ class Marks {
     this.fx = attribute(n, 4);
     this.fx2 = attribute(n, 2);
     this.ai = attribute(n, 2);
-    this.rings = plain(quads(n, { iPlace: this.place_, iColor: this.color, iFx: this.fx, iFx2: this.fx2, iAi: this.ai }), ringMaterial(), 2);
+    this.imp = attribute(n, 2);
+    this.rings = plain(quads(n, { iPlace: this.place_, iColor: this.color, iFx: this.fx, iFx2: this.fx2, iAi: this.ai, iImp: this.imp }), ringMaterial(), 2);
     this.pPos = attribute(n * QUADS, 4);
     this.pColor = attribute(n * QUADS, 3);
     this.pFx = attribute(n * QUADS, 4);
@@ -181,6 +183,7 @@ class Marks {
       this.fx.setXYZW(i, code, n.load, n.visible, n.highlight);
       this.fx2.setXY(i, Math.min(100, clock - n.flashAt), n.seed);
       this.ai.setXY(i, n.anomaly, n.risk);
+      this.imp.setXY(i, n.impact, n.role);
       const y = n.size.h + 0.62;
       const q = i * QUADS;
       this.pPos.setXYZW(q, n.x, y, n.z, 0.95);
@@ -201,7 +204,7 @@ class Marks {
       this.pFx.setXYZW(q + 3, 0, n.anomaly > 0.02 ? n.visible : 0, n.highlight, n.seed);
       this.pWhat.setXY(q + 3, iconIndex("anomaly"), 3);
     });
-    for (const a of [this.place_, this.color, this.fx, this.fx2, this.ai, this.pPos, this.pColor, this.pFx, this.pWhat]) a.needsUpdate = true;
+    for (const a of [this.place_, this.color, this.fx, this.fx2, this.ai, this.imp, this.pPos, this.pColor, this.pFx, this.pWhat]) a.needsUpdate = true;
   }
 
   dispose(): void {
@@ -277,6 +280,8 @@ class Links {
       d[o + 20] = s[0];
       d[o + 21] = s[1];
       d[o + 22] = s[2];
+      d[o + 24] = w.propagation;
+      d[o + 25] = w.step;
     });
     this.texture.needsUpdate = true;
   }

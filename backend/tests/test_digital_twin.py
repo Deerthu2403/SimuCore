@@ -845,10 +845,12 @@ def test_client_mirror_equals_the_twin_after_random_changes(api):
             else:
                 w.services[name]["deployment"] = rng.choice(["process", "container"])
             api.feed(rng.randint(1, 3))
-            target = api.sync.twin.version
-            while mirror.version < target:
-                mirror.receive(ws.receive_json())
+            # the AI feed may change the twin between two reads: catch up to what was read
             truth = api.get("/api/v2/twin").json()
+            while mirror.version < truth["meta"]["version"]:
+                mirror.receive(ws.receive_json())
+                if mirror.version > truth["meta"]["version"]:
+                    truth = api.get("/api/v2/twin").json()
             assert mirror.components == {c["id"]: c for c in truth["components"]}, step
             assert mirror.links == {k["id"]: k for k in truth["links"]}, step
         assert mirror.transitions
@@ -904,9 +906,11 @@ def test_websocket_announces_loss_of_synchronisation(api):
     with api.websocket_connect("/ws/v2/twin") as ws:
         ws.receive_json()
         api.sync.twin.last_applied_at = datetime.now(UTC) - timedelta(minutes=1)
-        m = ws.receive_json()
-        while m["type"] == "heartbeat":
+        # opinions of the AI service may still arrive before the twin notices the silence
+        for _ in range(20):
             m = ws.receive_json()
+            if m["type"] != "heartbeat" and m["meta"]["sync"] == "stale":
+                break
         assert m["meta"]["sync"] == "stale"
         assert {c["status"] for c in m["components"]} == {"unknown"}
 

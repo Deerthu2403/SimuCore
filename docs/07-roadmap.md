@@ -36,6 +36,7 @@ flowchart LR
 | **Digital twin core** *(done)* | Virtual infrastructure, six statuses, live synchronisation, history, API v2 and WebSocket with a published format for the 3D frontend (`backend/app/digital_twin`, doc 10) | Monitoring | every real change is reflected; chaos test without a mismatch |
 | **3D interface** *(done)* | Interactive 3D data centre on API v2: live statuses and metrics, request flow, isolate, dependency view, search, alerts, history (`frontend/`, doc 11). Includes the instanced rendering planned for P7 | Digital twin core | every interaction and real fault verified in a real browser; 1 000 objects above 50 fps |
 | **AI module** *(done; covers P3 Intelligence I)* | Isolation Forest and XGBoost on labelled synthetic data, AI service, storage with outcomes, opinions in the twin and the 3D interface (`intelligence/`, doc 12) | Monitoring, digital twin core | validated on held-out synthetic episodes and on real runs recorded after the models were frozen |
+| **Failure propagation** *(done; replaces propagation v1 on the live twin)* | Directed weighted graph built from the twin's structure, BFS impact, critical components, events judged against later measurements, 3D path and simulation (`backend/app/digital_twin/propagation.py`, doc 13). Monte-Carlo propagation stays in P4 | Digital twin core, 3D interface | predictions compared with measured effects of real crashes; every structure change rebuilds the graph |
 
 The phase numbers above are unchanged; the unnumbered rows come between P1 and P2.
 

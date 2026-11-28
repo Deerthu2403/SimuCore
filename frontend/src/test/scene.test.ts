@@ -128,7 +128,7 @@ describe("world", () => {
     run(w, 1);
     expect(w.nodes.get("a")!.load).toBe(-1);
     components[1] = { ...components[1], display: { ...components[1].display, load: 0.8 } };
-    links[1] = { ...links[1], display: { flow: 0.5, attention: false }, metrics: { failure_rate: 0.25 } };
+    links[1] = { ...links[1], display: { ...links[1].display, flow: 0.5 }, metrics: { failure_rate: 0.25 } };
     w.sync(mirror(components, links));
     run(w, 4);
     expect(w.nodes.get("a")!.load).toBeCloseTo(0.8, 2);
@@ -145,7 +145,7 @@ describe("world", () => {
     };
     run(w, 1);
     const slow = speed();
-    links[1] = { ...links[1], display: { flow: 1, attention: false } };
+    links[1] = { ...links[1], display: { ...links[1].display, flow: 1 } };
     w.sync(mirror(components, links));
     const now = speed();
     expect(now).toBeLessThan(slow * 1.5); // at the moment of the change
@@ -308,6 +308,7 @@ describe("contract", () => {
     ["TwinComponent", "ComponentView"], ["TwinLink", "LinkView"], ["Summary", "Summary"], ["Meta", "TwinMeta"],
     ["Finding", "FindingView"], ["DependencyRef", "DependencyRef"], ["Insight", "InsightView"],
     ["AnomalyOpinion", "AnomalyView"], ["RiskOpinion", "RiskView"], ["PredictiveWarning", "PredictiveWarning"],
+    ["ImpactView", "ImpactView"], ["PropagationSummary", "PropagationSummary"],
   ])("%s has the fields of %s", (ours, theirs) => expect(fields(ours)).toEqual(published(theirs)));
   it("transitions have the published fields", () => expect(fields("Transition").filter((f) => f !== "run_id")).toEqual(published("TransitionView")));
   it("knows every status, type and kind of link", () => {
@@ -318,7 +319,7 @@ describe("contract", () => {
 });
 
 describe("no invented data", () => {
-  const files = ["scene/TwinScene.tsx", "scene/world.ts", "scene/objects.ts", "scene/layout.ts", "scene/Labels.tsx", "ui/Inspector.tsx", "ui/LeftPanel.tsx", "ui/Events.tsx", "ui/Chrome.tsx", "ui/DependencyGraph.tsx", "ui/Ai.tsx", "twin/ai.ts", "twin/store.ts", "twin/samples.ts", "twin/view.ts"];
+  const files = ["scene/TwinScene.tsx", "scene/world.ts", "scene/objects.ts", "scene/layout.ts", "scene/Labels.tsx", "ui/Inspector.tsx", "ui/LeftPanel.tsx", "ui/Events.tsx", "ui/Chrome.tsx", "ui/DependencyGraph.tsx", "ui/Ai.tsx", "ui/Impact.tsx", "twin/ai.ts", "twin/impact.ts", "twin/store.ts", "twin/samples.ts", "twin/view.ts"];
   it.each(files)("%s contains no random values and no component ids", (f) => {
     const s = readFileSync(new URL(`../${f}`, import.meta.url), "utf-8");
     expect(s).not.toMatch(/Math\.random/);

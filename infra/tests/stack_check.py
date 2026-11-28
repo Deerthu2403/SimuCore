@@ -178,7 +178,7 @@ async def p03(s: Stack) -> dict:
         "SELECT count(*) FROM pg_class WHERE relnamespace='public'::regnamespace "
         "AND relkind IN ('r','p') AND NOT relispartition")
     await conn.close()
-    assert n == 30, n  # 22 of Phase 1, 3 of monitoring, 4 of the digital twin, 1 of the AI
+    assert n == 31, n  # 22 of Phase 1, 3 of monitoring, 5 of the digital twin, 1 of the AI
     return {"tables": n}
 
 

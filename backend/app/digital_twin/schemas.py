@@ -63,6 +63,9 @@ class ComponentDisplay(BaseModel):
 class LinkDisplay(BaseModel):
     flow: float = Field(ge=0, le=1, description="Traffic on a logarithmic scale; 0 = none")
     attention: bool
+    propagation: float = Field(default=0, ge=0, le=1,
+                               description="Impact a current failure carries along it; 0 = none")
+    propagation_step: int | None = Field(default=None, description="Its place in the chain, from 1")
 
 
 class AnomalyContribution(BaseModel):
@@ -106,6 +109,33 @@ class RiskReason(BaseModel):
     contribution: float = Field(description="Log-odds; positive raises the risk")
 
 
+class ImpactView(BaseModel):
+    """Failure propagation: what the current failures may do to this component (weighted BFS over
+    the dependency graph). An estimate, unless ``role`` is origin or confirmed."""
+
+    role: Literal["origin", "confirmed", "predicted"] = Field(
+        description="origin: a failure nothing else explains; confirmed: affected, and its own "
+                    "measurements show trouble; predicted: affected according to the graph only")
+    impact: float = Field(ge=0, le=1, description="Estimated share of its work that fails")
+    level: Literal["failed", "severe", "high", "moderate", "low"]
+    score: float = Field(description="impact x criticality, 0..5")
+    steps: int = Field(description="Dependencies between it and the failure")
+    chain: list[str] = Field(description="Ids from the failure to this component")
+    links: list[str] = Field(description="The dependencies along the chain")
+    origins: list[str] = Field(description="Failures that reach it, strongest first")
+
+
+class PropagationSummary(BaseModel):
+    origins: list[str]
+    since: datetime | None
+    level: Literal["none", "low", "moderate", "high", "severe"]
+    affected: int = Field(description="Components at least moderately affected")
+    affected_severe: int
+    expected_affected: float = Field(description="Sum of the impacts")
+    business_impact: float
+    event_id: str | None
+
+
 class InsightView(BaseModel):
     """What the AI service thinks. Never part of the status."""
 
@@ -136,6 +166,7 @@ class ComponentView(BaseModel):
     attributes: dict[str, Any]
     dependencies: Dependencies
     insight: InsightView | None = Field(description="Opinion of the AI service; null if none")
+    impact: ImpactView | None = Field(description="Failure propagation; null if not affected")
     display: ComponentDisplay
 
 
@@ -167,6 +198,7 @@ class Summary(BaseModel):
     ai: Literal["live", "absent"] = Field(description="Does the AI service report?")
     anomalies: list[str] = Field(description="Ids with a confirmed anomaly")
     predicted: list[str] = Field(description="Ids with a predictive warning")
+    propagation: PropagationSummary
 
 
 class TwinMeta(BaseModel):
@@ -234,10 +266,36 @@ def component_view(twin: DigitalTwin, cid: str) -> ComponentView:
             depends_on=[ref(k.id, k.target) for k in twin.blueprint.outgoing[cid]],
             dependents=[ref(k.id, k.source) for k in twin.blueprint.incoming[cid]]),
         insight=insight_view(twin, cid),
+        impact=impact_view(twin, cid),
         display=ComponentDisplay(
             layer=spec.layer, group=spec.group, order=same_layer.index(cid), size=spec.criticality,
             load=_load(spec.attributes, s),
             attention=s.status in (Status.FAILED, Status.OVERLOADED, Status.RECOVERING)))
+
+
+def impact_view(twin: DigitalTwin, cid: str) -> ImpactView | None:
+    role = twin.impact.role(twin, cid)
+    if role is None:
+        return None
+    i = twin.impact.analysis.impacts[cid]  # type: ignore[union-attr]
+    best = i.via[0]
+    return ImpactView(role=role, impact=i.impact, level=i.level, score=i.score, steps=i.steps,
+                      chain=list(best.path), links=list(best.links),
+                      origins=[r.origin for r in i.via])
+
+
+def propagation_summary(twin: DigitalTwin) -> PropagationSummary:
+    t = twin.impact
+    a = t.analysis
+    if a is None:
+        return PropagationSummary(origins=[], since=None, level="none", affected=0,
+                                  affected_severe=0, expected_affected=0, business_impact=0,
+                                  event_id=None)
+    return PropagationSummary(
+        origins=list(a.origins), since=t.since, level=a.overall(), affected=a.count(),
+        affected_severe=a.count("severe"), expected_affected=a.expected_affected(),
+        business_impact=a.business_impact(),
+        event_id=next((e.id for e in reversed(t.events) if e.origins == a.origins), None))
 
 
 def insight_view(twin: DigitalTwin, cid: str) -> InsightView | None:
@@ -263,7 +321,9 @@ def link_view(twin: DigitalTwin, lid: str) -> LinkView:
         purpose=k.purpose, status=s.status, status_since=s.since, reason=s.reason,
         active=calls > 0, metrics=dict(s.metrics), data_quality=s.quality,
         display=LinkDisplay(flow=round(min(1.0, math.log10(1 + calls) / 2), 3),
-                            attention=s.status is Status.FAILED))
+                            attention=s.status is Status.FAILED,
+                            propagation=(twin.impact.link_key(lid) or (0.0, None))[0],
+                            propagation_step=(twin.impact.link_key(lid) or (0.0, None))[1]))
 
 
 def summary(twin: DigitalTwin) -> Summary:
@@ -284,7 +344,8 @@ def summary(twin: DigitalTwin) -> Summary:
         links_failed=sum(s.status is Status.FAILED for s in twin.links.values()),
         needs_attention=trouble, ai="live" if twin.insights else "absent",
         anomalies=sorted(c for c, i in twin.insights.items() if i.anomaly and i.anomaly.since),
-        predicted=sorted(c for c, i in twin.insights.items() if i.warnings))
+        predicted=sorted(c for c, i in twin.insights.items() if i.warnings),
+        propagation=propagation_summary(twin))
 
 
 def meta(twin: DigitalTwin, now: datetime) -> TwinMeta:

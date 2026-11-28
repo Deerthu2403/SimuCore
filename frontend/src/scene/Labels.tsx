@@ -5,6 +5,7 @@ import { useTwin, useUnits } from "../twin/store";
 import { useView } from "../twin/view";
 import { AI_COLOR, isAnomalous, percent, riskOf, topWarning } from "../twin/ai";
 import { STATUS, text } from "../twin/format";
+import { describe, IMPACT_COLOR, impactOf, ROLE, useImpact } from "../twin/impact";
 import { Icon } from "../ui/Icon";
 import { world } from "./world";
 
@@ -63,7 +64,7 @@ export function LabelMover() {
         e.style.visibility = "hidden";
         continue;
       }
-      list.push({ id, e, x, y, z: V.z, rank: point ? 100 : STATUS[n.status].rank * 10 + (n.risk > 0 ? 35 : 0) + (n.anomaly > 0 ? 5 : 0) });
+      list.push({ id, e, x, y, z: V.z, rank: point ? 100 : STATUS[n.status].rank * 10 + (n.risk > 0 ? 35 : 0) + (n.anomaly > 0 ? 5 : 0) + n.role * 6 });
     }
     list.sort((a, b) => b.rank - a.rank || a.z - b.z);
     for (const l of list) {
@@ -146,6 +147,7 @@ const Label = memo(function Label({ id }: { id: string }) {
     return w ? `${w.target} ${percent(riskOf(c))} in ${w.horizon_s / 60} min` : "";
   });
   const near = useView((s) => s.hovered === id || (s.selected?.kind === "component" && s.selected.id === id));
+  const impact = useImpactLine(id);
   if (!name || !status) return null;
   return (
     <div
@@ -163,10 +165,33 @@ const Label = memo(function Label({ id }: { id: string }) {
           {risk && <span><Icon name="forecast" size={11} color={AI_COLOR.risk} /> {risk}</span>}
         </span>
       )}
+      {impact && (
+        <span className="label-impact" data-role={impact.role} style={{ color: IMPACT_COLOR }}>
+          <Icon name="graph" size={11} color={IMPACT_COLOR} /> {impact.text}
+        </span>
+      )}
       {near && <LabelNumbers id={id} />}
     </div>
   );
 });
+
+/** "predicted impact: high 60 %, 1 step from Payment Gateway"; empty for the failure itself,
+ *  whose status already says it. */
+function useImpactLine(id: string): { role: string; text: string } | null {
+  const sim = useImpact((s) => s.simulation);
+  const line = useTwin((s) => {
+    const m = s.mirror;
+    const c = m?.components[id];
+    const i = c && impactOf(c, sim);
+    if (!i || !m) return "";
+    const name = (x: string) => m.components[x]?.name ?? x;
+    if (i.role === "origin") return sim ? "origin|simulated failure" : "";
+    return `${i.role}|${ROLE[i.role].label}: ${describe(i, name)}`;
+  });
+  if (!line) return null;
+  const [role, text] = line.split("|");
+  return { role, text };
+}
 
 function LabelNumbers({ id }: { id: string }) {
   const m = useTwin((s) => s.mirror?.components[id]?.metrics);

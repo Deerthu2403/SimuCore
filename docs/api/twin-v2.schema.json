@@ -254,6 +254,17 @@
             ],
             "description": "Opinion of the AI service; null if none"
           },
+          "impact": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ImpactView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Failure propagation; null if not affected"
+          },
           "display": {
             "$ref": "#/$defs/ComponentDisplay"
           }
@@ -275,6 +286,7 @@
           "attributes",
           "dependencies",
           "insight",
+          "impact",
           "display"
         ],
         "title": "ComponentView",
@@ -406,6 +418,85 @@
         "title": "FindingView",
         "type": "object"
       },
+      "ImpactView": {
+        "description": "Failure propagation: what the current failures may do to this component (weighted BFS over\nthe dependency graph). An estimate, unless ``role`` is origin or confirmed.",
+        "properties": {
+          "role": {
+            "description": "origin: a failure nothing else explains; confirmed: affected, and its own measurements show trouble; predicted: affected according to the graph only",
+            "enum": [
+              "origin",
+              "confirmed",
+              "predicted"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "impact": {
+            "description": "Estimated share of its work that fails",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Impact",
+            "type": "number"
+          },
+          "level": {
+            "enum": [
+              "failed",
+              "severe",
+              "high",
+              "moderate",
+              "low"
+            ],
+            "title": "Level",
+            "type": "string"
+          },
+          "score": {
+            "description": "impact x criticality, 0..5",
+            "title": "Score",
+            "type": "number"
+          },
+          "steps": {
+            "description": "Dependencies between it and the failure",
+            "title": "Steps",
+            "type": "integer"
+          },
+          "chain": {
+            "description": "Ids from the failure to this component",
+            "items": {
+              "type": "string"
+            },
+            "title": "Chain",
+            "type": "array"
+          },
+          "links": {
+            "description": "The dependencies along the chain",
+            "items": {
+              "type": "string"
+            },
+            "title": "Links",
+            "type": "array"
+          },
+          "origins": {
+            "description": "Failures that reach it, strongest first",
+            "items": {
+              "type": "string"
+            },
+            "title": "Origins",
+            "type": "array"
+          }
+        },
+        "required": [
+          "role",
+          "impact",
+          "level",
+          "score",
+          "steps",
+          "chain",
+          "links",
+          "origins"
+        ],
+        "title": "ImpactView",
+        "type": "object"
+      },
       "InsightView": {
         "description": "What the AI service thinks. Never part of the status.",
         "properties": {
@@ -485,6 +576,27 @@
           "attention": {
             "title": "Attention",
             "type": "boolean"
+          },
+          "propagation": {
+            "default": 0,
+            "description": "Impact a current failure carries along it; 0 = none",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Propagation",
+            "type": "number"
+          },
+          "propagation_step": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Its place in the chain, from 1",
+            "title": "Propagation Step"
           }
         },
         "required": [
@@ -649,6 +761,81 @@
         "title": "PredictiveWarning",
         "type": "object"
       },
+      "PropagationSummary": {
+        "properties": {
+          "origins": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Origins",
+            "type": "array"
+          },
+          "since": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Since"
+          },
+          "level": {
+            "enum": [
+              "none",
+              "low",
+              "moderate",
+              "high",
+              "severe"
+            ],
+            "title": "Level",
+            "type": "string"
+          },
+          "affected": {
+            "description": "Components at least moderately affected",
+            "title": "Affected",
+            "type": "integer"
+          },
+          "affected_severe": {
+            "title": "Affected Severe",
+            "type": "integer"
+          },
+          "expected_affected": {
+            "description": "Sum of the impacts",
+            "title": "Expected Affected",
+            "type": "number"
+          },
+          "business_impact": {
+            "title": "Business Impact",
+            "type": "number"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          }
+        },
+        "required": [
+          "origins",
+          "since",
+          "level",
+          "affected",
+          "affected_severe",
+          "expected_affected",
+          "business_impact",
+          "event_id"
+        ],
+        "title": "PropagationSummary",
+        "type": "object"
+      },
       "RiskReason": {
         "properties": {
           "metric": {
@@ -805,6 +992,9 @@
             },
             "title": "Predicted",
             "type": "array"
+          },
+          "propagation": {
+            "$ref": "#/$defs/PropagationSummary"
           }
         },
         "required": [
@@ -817,7 +1007,8 @@
           "needs_attention",
           "ai",
           "anomalies",
-          "predicted"
+          "predicted",
+          "propagation"
         ],
         "title": "Summary",
         "type": "object"
@@ -1191,6 +1382,17 @@
             ],
             "description": "Opinion of the AI service; null if none"
           },
+          "impact": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ImpactView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Failure propagation; null if not affected"
+          },
           "display": {
             "$ref": "#/$defs/ComponentDisplay"
           }
@@ -1212,6 +1414,7 @@
           "attributes",
           "dependencies",
           "insight",
+          "impact",
           "display"
         ],
         "title": "ComponentView",
@@ -1343,6 +1546,85 @@
         "title": "FindingView",
         "type": "object"
       },
+      "ImpactView": {
+        "description": "Failure propagation: what the current failures may do to this component (weighted BFS over\nthe dependency graph). An estimate, unless ``role`` is origin or confirmed.",
+        "properties": {
+          "role": {
+            "description": "origin: a failure nothing else explains; confirmed: affected, and its own measurements show trouble; predicted: affected according to the graph only",
+            "enum": [
+              "origin",
+              "confirmed",
+              "predicted"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "impact": {
+            "description": "Estimated share of its work that fails",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Impact",
+            "type": "number"
+          },
+          "level": {
+            "enum": [
+              "failed",
+              "severe",
+              "high",
+              "moderate",
+              "low"
+            ],
+            "title": "Level",
+            "type": "string"
+          },
+          "score": {
+            "description": "impact x criticality, 0..5",
+            "title": "Score",
+            "type": "number"
+          },
+          "steps": {
+            "description": "Dependencies between it and the failure",
+            "title": "Steps",
+            "type": "integer"
+          },
+          "chain": {
+            "description": "Ids from the failure to this component",
+            "items": {
+              "type": "string"
+            },
+            "title": "Chain",
+            "type": "array"
+          },
+          "links": {
+            "description": "The dependencies along the chain",
+            "items": {
+              "type": "string"
+            },
+            "title": "Links",
+            "type": "array"
+          },
+          "origins": {
+            "description": "Failures that reach it, strongest first",
+            "items": {
+              "type": "string"
+            },
+            "title": "Origins",
+            "type": "array"
+          }
+        },
+        "required": [
+          "role",
+          "impact",
+          "level",
+          "score",
+          "steps",
+          "chain",
+          "links",
+          "origins"
+        ],
+        "title": "ImpactView",
+        "type": "object"
+      },
       "InsightView": {
         "description": "What the AI service thinks. Never part of the status.",
         "properties": {
@@ -1422,6 +1704,27 @@
           "attention": {
             "title": "Attention",
             "type": "boolean"
+          },
+          "propagation": {
+            "default": 0,
+            "description": "Impact a current failure carries along it; 0 = none",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Propagation",
+            "type": "number"
+          },
+          "propagation_step": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Its place in the chain, from 1",
+            "title": "Propagation Step"
           }
         },
         "required": [
@@ -1586,6 +1889,81 @@
         "title": "PredictiveWarning",
         "type": "object"
       },
+      "PropagationSummary": {
+        "properties": {
+          "origins": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Origins",
+            "type": "array"
+          },
+          "since": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Since"
+          },
+          "level": {
+            "enum": [
+              "none",
+              "low",
+              "moderate",
+              "high",
+              "severe"
+            ],
+            "title": "Level",
+            "type": "string"
+          },
+          "affected": {
+            "description": "Components at least moderately affected",
+            "title": "Affected",
+            "type": "integer"
+          },
+          "affected_severe": {
+            "title": "Affected Severe",
+            "type": "integer"
+          },
+          "expected_affected": {
+            "description": "Sum of the impacts",
+            "title": "Expected Affected",
+            "type": "number"
+          },
+          "business_impact": {
+            "title": "Business Impact",
+            "type": "number"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          }
+        },
+        "required": [
+          "origins",
+          "since",
+          "level",
+          "affected",
+          "affected_severe",
+          "expected_affected",
+          "business_impact",
+          "event_id"
+        ],
+        "title": "PropagationSummary",
+        "type": "object"
+      },
       "RiskReason": {
         "properties": {
           "metric": {
@@ -1742,6 +2120,9 @@
             },
             "title": "Predicted",
             "type": "array"
+          },
+          "propagation": {
+            "$ref": "#/$defs/PropagationSummary"
           }
         },
         "required": [
@@ -1754,7 +2135,8 @@
           "needs_attention",
           "ai",
           "anomalies",
-          "predicted"
+          "predicted",
+          "propagation"
         ],
         "title": "Summary",
         "type": "object"

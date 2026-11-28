@@ -11,6 +11,7 @@ import anyio
 from fastapi import APIRouter, HTTPException, Path, Query, Request, Response, WebSocket
 from fastapi import WebSocketDisconnect as Disconnect
 
+from app.digital_twin import propagation
 from app.digital_twin import schemas as v
 from app.digital_twin.history import HistoryUnavailable, TwinHistory
 from app.digital_twin.hub import MAX_CLIENTS, Client
@@ -216,6 +217,81 @@ async def timeline(request: Request, component_id: Id, start: datetime | None = 
         share[x["status"]] = share.get(x["status"], 0.0) + x["seconds"] / total
     return {"id": component_id, "start": since, "end": until, "intervals": intervals,
             "share": {k: round(s, 4) for k, s in share.items()}}
+
+
+# ---------------------------------------------------------------------- propagation
+IdList = Annotated[str, Query(pattern=r"^[a-z][a-z0-9-]{1,60}(,[a-z][a-z0-9-]{1,60}){0,19}$",
+                              description="Comma-separated component ids")]
+
+
+@router.get("/propagation")
+async def propagation_now(request: Request) -> dict:
+    """How the current, confirmed failures may spread. Empty if nothing has failed."""
+    twin = _twin(request)
+    if twin.impact.analysis is None:
+        return {"origins": [], "report": None, "since": None}
+    return {"origins": list(twin.impact.analysis.origins), "since": twin.impact.since,
+            "report": twin.impact.report(twin)}
+
+
+@router.get("/propagation/analyze")
+async def propagation_what_if(request: Request, failed: IdList,
+                              format: Literal["json", "markdown"] = "json") -> Any:
+    """What would happen if these components failed. Nothing is stored and nothing is changed."""
+    twin = _twin(request)
+    ids = list(dict.fromkeys(failed.split(",")))
+    for c in ids:
+        _component(twin, c)
+    graph = twin.impact.graph_of(twin)
+    r = twin.impact.report(twin, propagation.analyse(graph, ids))
+    r["title"] = "What if " + " and ".join(graph.nodes[c].name for c in ids) + " failed"
+    r["what_if"] = True
+    r["links"] = {k: {"impact": v[0], "step": v[1]}
+                  for k, v in propagation.analyse(graph, ids).links.items()}
+    if format == "markdown":
+        return Response(propagation.markdown(r), media_type="text/markdown; charset=utf-8")
+    return r
+
+
+@router.get("/propagation/critical")
+async def critical(request: Request, group: Literal["bank", "platform", "all"] = "bank") -> dict:
+    """Every component failing alone, ranked by what it would do to the rest."""
+    twin = _twin(request)
+    graph = twin.impact.graph_of(twin)
+    ranked = propagation.critical_components(graph, None if group == "all" else group)
+    return {"graph": graph.checksum, "components": [
+        {**vars(c), "name": graph.nodes[c.id].name, "type": graph.nodes[c.id].type,
+         "criticality": graph.nodes[c.id].criticality} for c in ranked]}
+
+
+@router.get("/propagation/graph")
+async def dependency_graph(request: Request) -> dict:
+    """The directed, weighted graph the analysis uses: a -> b means a depends on b."""
+    twin = _twin(request)
+    g = twin.impact.graph_of(twin)
+    return {"checksum": g.checksum,
+            "nodes": [vars(n) for n in g.nodes.values()],
+            "edges": [vars(e) for e in g.edges.values()],
+            "strength": {"modes": propagation.MODE, "kinds": propagation.KIND,
+                         "threshold": propagation.THRESHOLD},
+            "levels": dict(propagation.LEVELS)}
+
+
+@router.get("/propagation/events")
+async def propagation_events(request: Request, component_id: str | None = Query(
+        None, pattern=r"^[a-z][a-z0-9-]{1,60}$"), start: datetime | None = None,
+        end: datetime | None = None, minutes: int = Query(60 * 24, ge=1, le=60 * 24 * 31),
+        limit: int = Query(100, ge=1, le=1000)) -> list[dict]:
+    """Stored propagation events: what was expected, and what happened."""
+    since, until = _period(start, end, minutes)
+    return await _read(_history(request).propagation(since, until, component_id, limit))
+
+
+@router.get("/propagation/events/live")
+async def propagation_events_live(request: Request) -> list[dict]:
+    """The events of this run of the twin, also without a database. Most recent first."""
+    twin = _twin(request)
+    return [e.view() for e in reversed(twin.impact.events)]
 
 
 # ------------------------------------------------------------------------- websocket

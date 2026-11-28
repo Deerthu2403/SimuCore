@@ -94,6 +94,9 @@ class TwinSync:
                 change = self.twin.expire()
                 if change:
                     self._publish(change)
+                closing = self.twin.tick(datetime.now(UTC))
+                if closing:
+                    self._publish(closing)
                 if self.history:
                     self.history.keep_alive(self.twin)
             except Exception:

@@ -19,6 +19,7 @@ The interface shows the digital twin (doc 10) as a data centre in the browser. I
 | desk with screens | **monitoring** | Prometheus, monitoring service |
 | arc with moving lights | a connection with requests | the measured calls |
 | cable on the floor | runs on / connected to / collects from | shown on demand or for the selected component |
+| teal band, waves, pulses along links | **failure propagation**: origin, confirmed or predicted (hatched) impact, path | the twin's propagation analysis, doc 13 |
 
 Walls, cooling units, cable tray and lamps are scenery. They cannot be selected and carry no data.
 

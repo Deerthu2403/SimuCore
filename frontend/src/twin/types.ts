@@ -73,6 +73,30 @@ export interface Insight {
   reasons: { metric: string; text: string; contribution: number }[];
 }
 
+/** Failure propagation: weighted breadth-first search over the dependency graph. An estimate,
+ *  unless the role is origin (a real failure) or confirmed (its own measurements show trouble). */
+export interface ImpactView {
+  role: "origin" | "confirmed" | "predicted";
+  impact: number;
+  level: "failed" | "severe" | "high" | "moderate" | "low";
+  score: number;
+  steps: number;
+  chain: string[];
+  links: string[];
+  origins: string[];
+}
+
+export interface PropagationSummary {
+  origins: string[];
+  since: string | null;
+  level: "none" | "low" | "moderate" | "high" | "severe";
+  affected: number;
+  affected_severe: number;
+  expected_affected: number;
+  business_impact: number;
+  event_id: string | null;
+}
+
 export interface TwinComponent {
   id: string;
   type: ComponentType;
@@ -91,6 +115,8 @@ export interface TwinComponent {
   dependencies: { depends_on: DependencyRef[]; dependents: DependencyRef[] };
   /** What the AI service thinks; never part of the status. */
   insight: Insight | null;
+  /** How a current failure may reach it; null if it is not affected. */
+  impact: ImpactView | null;
   display: {
     layer: string;
     group: string;
@@ -115,7 +141,8 @@ export interface TwinLink {
   active: boolean;
   metrics: Metrics;
   data_quality: Quality;
-  display: { flow: number; attention: boolean };
+  /** propagation: impact a current failure carries along it (0 = none); step: its place in the chain. */
+  display: { flow: number; attention: boolean; propagation: number; propagation_step: number | null };
 }
 
 export interface Summary {
@@ -129,6 +156,7 @@ export interface Summary {
   ai: "live" | "absent";
   anomalies: string[];
   predicted: string[];
+  propagation: PropagationSummary;
 }
 
 export interface Meta {

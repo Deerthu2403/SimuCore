@@ -1,3 +1,4 @@
+import { IMPACT_COLOR } from "../twin/impact";
 import { AdditiveBlending, DoubleSide, MeshStandardMaterial, ShaderMaterial, type IUniform } from "three";
 
 /** Shared by all materials; written once per frame. */
@@ -126,15 +127,17 @@ export function ringMaterial(): ShaderMaterial {
       ${VERT_COMMON}
       attribute vec4 iPlace; // x, z, half width, half depth
       attribute vec3 iColor; attribute vec4 iFx; attribute vec2 iFx2; attribute vec2 iAi; // anomaly, risk
-      varying vec2 vP; varying vec2 vHalf; varying vec3 vColor; varying vec4 vFx; varying vec2 vFx2; varying vec2 vAi;
+      attribute vec2 iImp; // propagation: impact, role (0 none, 1 predicted, 2 confirmed, 3 origin)
+      varying vec2 vP; varying vec2 vHalf; varying vec3 vColor; varying vec4 vFx; varying vec2 vFx2; varying vec2 vAi; varying vec2 vImp;
       void main() {
-        vec2 reach = iPlace.zw + 1.1;
-        vP = position.xy * 2. * reach; vHalf = iPlace.zw; vColor = iColor; vFx = iFx; vFx2 = iFx2; vAi = iAi;
+        vec2 reach = iPlace.zw + 1.25;
+        vP = position.xy * 2. * reach; vHalf = iPlace.zw; vColor = iColor; vFx = iFx; vFx2 = iFx2; vAi = iAi; vImp = iImp;
         gl_Position = projectionMatrix * viewMatrix * vec4(iPlace.x + vP.x, .015, iPlace.y - vP.y, 1.);
       }`,
     fragmentShader: /* glsl */ `
       ${COMMON}
-      varying vec2 vP; varying vec2 vHalf; varying vec3 vColor; varying vec4 vFx; varying vec2 vFx2; varying vec2 vAi;
+      varying vec2 vP; varying vec2 vHalf; varying vec3 vColor; varying vec4 vFx; varying vec2 vFx2; varying vec2 vAi; varying vec2 vImp;
+      const vec3 IMPACT = vec3(${IMPACT_GLSL});
       float box(vec2 p, vec2 b, float r) { vec2 q = abs(p) - b + r; return length(max(q, 0.)) + min(max(q.x, q.y), 0.) - r; }
       void main() {
         float code = floor(vFx.x + .5);
@@ -167,7 +170,22 @@ export function ringMaterial(): ShaderMaterial {
         float full = step(fract(turn + .25), vAi.y);
         float beatR = uMotion > .5 ? .75 + .25 * sin(uTime * 4.) : 1.;
         c = mix(c, vec3(1., .22, .55) * (full > .5 ? 1.25 * beatR : .25), ri); a = max(a, ri * (full > .5 ? 1. : .45));
-        a *= vFx.z * (1. - smoothstep(.8, 1.05, d));
+        a *= 1. - smoothstep(.8, 1.05, d);
+        // failure propagation, outermost and in its own colour: origin = waves going out,
+        // confirmed = a solid band, predicted = a hatched band, brighter with more impact
+        float role = floor(vImp.y + .5);
+        if (role > .5) {
+          float band = 1. - smoothstep(.06, .06 + px, abs(d - .98));
+          float strength = .45 + .55 * vImp.x;
+          float p = 0.;
+          if (role > 2.5) {
+            float w = uMotion > .5 ? fract(uTime * .45) : .6;
+            p = (1. - smoothstep(0., .07, abs(d - .1 - w * 1.05))) * (1. - w * .7) + band;
+          } else if (role > 1.5) p = band * strength;
+          else p = band * strength * step(.5, fract((vP.x - vP.y) * 2.4 - uTime * uMotion * .5));
+          c = mix(c, IMPACT * (1.1 + .4 * vImp.x), clamp(p, 0., 1.)); a = max(a, min(1., p));
+        }
+        a *= vFx.z * (1. - smoothstep(1.04, 1.09, d));
         if (a < .004) discard;
         gl_FragColor = vec4(staleOf(c) * (1. + .5 * line), a);
         #include <tonemapping_fragment>
@@ -238,6 +256,12 @@ export function plateMaterial(atlas: IUniform): ShaderMaterial {
   });
 }
 
+const IMPACT_GLSL = (() => {
+  const h = parseInt(IMPACT_COLOR.slice(1), 16);
+  const lin = (v: number) => Math.pow(v / 255, 2.2).toFixed(3);
+  return `${lin(h >> 16)}, ${lin((h >> 8) & 255)}, ${lin(h & 255)}`;
+})();
+
 const LINK_FETCH = /* glsl */ `
   uniform highp sampler2D uLinks;
   vec4 link(int row, int col) { return texelFetch(uLinks, ivec2(col, row), 0); }
@@ -247,7 +271,7 @@ const LINK_FETCH = /* glsl */ `
     float u = 1. - t; return 3.*u*u*(b-a) + 6.*u*t*(c-b) + 3.*t*t*(d-c); }`;
 
 /** Columns of the link texture. */
-export const LINK_COLS = 6;
+export const LINK_COLS = 7;
 
 /** All connections: one tube template, bent in the vertex shader along each link's curve. */
 export function wireMaterial(links: IUniform): ShaderMaterial {
@@ -256,17 +280,17 @@ export function wireMaterial(links: IUniform): ShaderMaterial {
     vertexShader: /* glsl */ `
       ${VERT_COMMON}
       ${LINK_FETCH}
-      varying float vT; varying float vLen; varying vec4 vA; varying vec3 vColor; varying float vVisible; varying float vFlow; varying float vKind; varying vec3 vN; varying vec3 vV;
+      varying float vT; varying float vLen; varying vec4 vA; varying vec3 vColor; varying float vVisible; varying float vFlow; varying float vKind; varying vec3 vN; varying vec3 vV; varying vec2 vProp;
       void main() {
         int row = gl_InstanceID;
         vec4 a = link(row, 0), b = link(row, 1), c = link(row, 2), d = link(row, 3);
-        vA = link(row, 4); vColor = link(row, 5).rgb; vVisible = d.w; vFlow = b.w; vKind = a.w; vT = position.x;
+        vA = link(row, 4); vColor = link(row, 5).rgb; vProp = link(row, 6).xy; vVisible = d.w; vFlow = b.w; vKind = a.w; vT = position.x;
         vec3 p = bezier(a.xyz, b.xyz, c.xyz, d.xyz, position.x);
         vec3 t = normalize(slope(a.xyz, b.xyz, c.xyz, d.xyz, clamp(position.x, .001, .999)) + vec3(1e-5));
         vec3 side = normalize(cross(t, abs(t.y) > .95 ? vec3(1., 0., 0.) : vec3(0., 1., 0.)));
         vec3 up = cross(side, t);
         vLen = distance(a.xyz, d.xyz) * 1.15;
-        float r = (a.w < 2.5 ? .02 + .022 * b.w : .03) + .01 * vA.z;
+        float r = (a.w < 2.5 ? .02 + .022 * b.w : .03) + .01 * vA.z + .028 * vProp.x;
         float dist = -(viewMatrix * vec4(p, 1.)).z;
         r = max(r, dist * .00085) * step(.02, d.w);
         vec3 n = side * cos(position.y) + up * sin(position.y);
@@ -276,7 +300,8 @@ export function wireMaterial(links: IUniform): ShaderMaterial {
       }`,
     fragmentShader: /* glsl */ `
       ${COMMON}
-      varying float vT; varying float vLen; varying vec4 vA; varying vec3 vColor; varying float vVisible; varying float vFlow; varying float vKind; varying vec3 vN; varying vec3 vV;
+      varying float vT; varying float vLen; varying vec4 vA; varying vec3 vColor; varying float vVisible; varying float vFlow; varying float vKind; varying vec3 vN; varying vec3 vV; varying vec2 vProp;
+      const vec3 IMPACT = vec3(${IMPACT_GLSL});
       void main() {
         float code = floor(vA.y + .5);
         if (vVisible < .01) discard;
@@ -288,6 +313,14 @@ export function wireMaterial(links: IUniform): ShaderMaterial {
         vec3 c = code < .5 ? calm : vColor * pulse(code, vT, vA.w) * .8;
         float lit = .55 + .45 * max(dot(vN, normalize(vec3(.3, 1., .4))), 0.);
         c = c * lit + (code < .5 ? vec3(.14, .38, .8) : vColor) * vA.z * .5;
+        // failure propagation: from the failed dependency (end of the link) to the dependent (start),
+        // one step after the other, a pulse that runs along the whole chain
+        if (vProp.x > .01) {
+          float at = vProp.y - 1. + (1. - vT);
+          float front = uMotion > .5 ? mod(uTime * 1.1, 5.) : -9.;
+          float glow = exp(-pow((at - front) * 3.2, 2.));
+          c = mix(c, IMPACT * (.55 + .45 * vProp.x) * lit, .75) + IMPACT * glow * (.6 + vProp.x);
+        }
         gl_FragColor = vec4(staleOf(c), min(1., vVisible));
         #include <tonemapping_fragment>
         #include <colorspace_fragment>

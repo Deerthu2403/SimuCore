@@ -1,0 +1,379 @@
+{
+ "run_at": "2026-11-28T04:07:50Z",
+ "total": {
+  "runs": 8,
+  "judged": 8,
+  "predicted": 18,
+  "observed": 18,
+  "hits": 15,
+  "precision": 0.833,
+  "recall": 0.833,
+  "spearman_all_pairs": 0.884,
+  "pairs": 64,
+  "stored_in_db": 8
+ },
+ "runs": [
+  {
+   "origin": "bank-authentication",
+   "confirmed_after_s": 1.5,
+   "event": "bea91f0c-99dc-4ee3-a0e1-fd6c69067788",
+   "stored": true,
+   "origins": [
+    "bank-authentication"
+   ],
+   "level": "severe",
+   "predicted": [
+    "bank-customer",
+    "bank-transaction",
+    "bank-account",
+    "lb-clients"
+   ],
+   "outcome": {
+    "judged": true,
+    "observed": [
+     "bank-account",
+     "bank-customer",
+     "bank-transaction",
+     "lb-clients"
+    ],
+    "hits": [
+     "bank-account",
+     "bank-customer",
+     "bank-transaction",
+     "lb-clients"
+    ],
+    "missed": [],
+    "not_observed": [],
+    "precision": 1.0,
+    "recall": 1.0
+   },
+   "impact": {
+    "bank-customer": 0.9,
+    "bank-transaction": 0.9,
+    "bank-account": 0.8,
+    "lb-clients": 0.4
+   },
+   "error_rate_rise": {
+    "bank-customer": 1.0,
+    "bank-account": 1.0,
+    "bank-transaction": 1.0,
+    "bank-payment": 0.0,
+    "bank-fraud": 0.0,
+    "bank-notification": 0.0,
+    "bank-database": 0.0,
+    "lb-clients": 1.0
+   },
+   "spearman_impact_vs_error_rise": 0.936
+  },
+  {
+   "origin": "bank-customer",
+   "confirmed_after_s": 3.0,
+   "event": "32a2fcc6-175f-4e12-8b3c-46d0b19ef8fa",
+   "stored": true,
+   "origins": [
+    "bank-customer"
+   ],
+   "level": "high",
+   "predicted": [
+    "lb-clients"
+   ],
+   "outcome": {
+    "judged": true,
+    "observed": [],
+    "hits": [],
+    "missed": [],
+    "not_observed": [
+     "lb-clients"
+    ],
+    "precision": 0.0,
+    "recall": null
+   },
+   "impact": {
+    "lb-clients": 0.4
+   },
+   "error_rate_rise": {
+    "bank-authentication": 0.0,
+    "bank-account": 0.0,
+    "bank-transaction": 0.0,
+    "bank-payment": 0.0,
+    "bank-fraud": 0.0,
+    "bank-notification": 0.0,
+    "bank-database": 0.0,
+    "lb-clients": 0.0
+   },
+   "spearman_impact_vs_error_rise": null
+  },
+  {
+   "origin": "bank-account",
+   "confirmed_after_s": 2.0,
+   "event": "c340d07b-c329-4e8e-b47d-b6782df92cf3",
+   "stored": true,
+   "origins": [
+    "bank-account"
+   ],
+   "level": "severe",
+   "predicted": [
+    "bank-transaction",
+    "lb-clients"
+   ],
+   "outcome": {
+    "judged": true,
+    "observed": [
+     "bank-transaction",
+     "lb-clients"
+    ],
+    "hits": [
+     "bank-transaction",
+     "lb-clients"
+    ],
+    "missed": [],
+    "not_observed": [],
+    "precision": 1.0,
+    "recall": 1.0
+   },
+   "impact": {
+    "bank-transaction": 1.0,
+    "lb-clients": 0.4
+   },
+   "error_rate_rise": {
+    "bank-authentication": 0.0,
+    "bank-customer": 0.0,
+    "bank-transaction": 1.0,
+    "bank-payment": 0.0,
+    "bank-fraud": 0.0,
+    "bank-notification": 0.0,
+    "bank-database": 0.0,
+    "lb-clients": 0.8205
+   },
+   "spearman_impact_vs_error_rise": 1.0
+  },
+  {
+   "origin": "bank-transaction",
+   "confirmed_after_s": 2.5,
+   "event": "303631f4-9737-4d00-9bb1-568363a83555",
+   "stored": true,
+   "origins": [
+    "bank-transaction"
+   ],
+   "level": "high",
+   "predicted": [
+    "lb-clients"
+   ],
+   "outcome": {
+    "judged": true,
+    "observed": [],
+    "hits": [],
+    "missed": [],
+    "not_observed": [
+     "lb-clients"
+    ],
+    "precision": 0.0,
+    "recall": null
+   },
+   "impact": {
+    "lb-clients": 0.4
+   },
+   "error_rate_rise": {
+    "bank-authentication": 0.0,
+    "bank-customer": 0.0,
+    "bank-account": 0.0,
+    "bank-payment": 0.0,
+    "bank-fraud": 0.0,
+    "bank-notification": 0.0,
+    "bank-database": 0.0,
+    "lb-clients": 0.0
+   },
+   "spearman_impact_vs_error_rise": null
+  },
+  {
+   "origin": "bank-payment",
+   "confirmed_after_s": 1.0,
+   "event": "e8bc6302-5765-45f8-a03e-9f15b165e12a",
+   "stored": true,
+   "origins": [
+    "bank-payment"
+   ],
+   "level": "high",
+   "predicted": [
+    "bank-transaction",
+    "lb-clients"
+   ],
+   "outcome": {
+    "judged": true,
+    "observed": [
+     "bank-transaction",
+     "lb-clients"
+    ],
+    "hits": [
+     "bank-transaction",
+     "lb-clients"
+    ],
+    "missed": [],
+    "not_observed": [],
+    "precision": 1.0,
+    "recall": 1.0
+   },
+   "impact": {
+    "bank-transaction": 0.6,
+    "lb-clients": 0.24
+   },
+   "error_rate_rise": {
+    "bank-authentication": 0.0,
+    "bank-customer": 0.0,
+    "bank-account": 0.0,
+    "bank-transaction": 0.5652,
+    "bank-fraud": 0.0,
+    "bank-notification": 0.0,
+    "bank-database": 0.0,
+    "lb-clients": 0.217
+   },
+   "spearman_impact_vs_error_rise": 1.0
+  },
+  {
+   "origin": "bank-fraud",
+   "confirmed_after_s": 1.9,
+   "event": "4dbf6c78-5760-4551-85ae-08d4dc43afd3",
+   "stored": true,
+   "origins": [
+    "bank-fraud"
+   ],
+   "level": "moderate",
+   "predicted": [
+    "bank-transaction"
+   ],
+   "outcome": {
+    "judged": true,
+    "observed": [
+     "bank-transaction",
+     "lb-clients"
+    ],
+    "hits": [
+     "bank-transaction"
+    ],
+    "missed": [
+     "lb-clients"
+    ],
+    "not_observed": [],
+    "precision": 1.0,
+    "recall": 0.5
+   },
+   "impact": {
+    "bank-transaction": 0.25,
+    "lb-clients": 0.1
+   },
+   "error_rate_rise": {
+    "bank-authentication": 0.0,
+    "bank-customer": 0.0,
+    "bank-account": 0.0,
+    "bank-transaction": 0.0741,
+    "bank-payment": 0.0,
+    "bank-notification": 0.0,
+    "bank-database": 0.0,
+    "lb-clients": 0.0267
+   },
+   "spearman_impact_vs_error_rise": 1.0
+  },
+  {
+   "origin": "bank-notification",
+   "confirmed_after_s": 2.0,
+   "event": "14df0d7c-eec6-4dc3-8a64-634b095ce42d",
+   "stored": true,
+   "origins": [
+    "bank-notification"
+   ],
+   "level": "none",
+   "predicted": [],
+   "outcome": {
+    "judged": true,
+    "observed": [
+     "bank-payment",
+     "bank-transaction"
+    ],
+    "hits": [],
+    "missed": [
+     "bank-payment",
+     "bank-transaction"
+    ],
+    "not_observed": [],
+    "precision": null,
+    "recall": 0.0
+   },
+   "impact": {},
+   "error_rate_rise": {
+    "bank-authentication": 0.0,
+    "bank-customer": 0.0,
+    "bank-account": 0.0,
+    "bank-transaction": 0.0,
+    "bank-payment": 0.0,
+    "bank-fraud": 0.0,
+    "bank-database": 0.0,
+    "lb-clients": 0.0
+   },
+   "spearman_impact_vs_error_rise": null
+  },
+  {
+   "origin": "bank-database",
+   "confirmed_after_s": 2.0,
+   "event": "9a176660-de16-4fe5-be7a-3c9a4e346dad",
+   "stored": true,
+   "origins": [
+    "bank-database"
+   ],
+   "level": "severe",
+   "predicted": [
+    "bank-account",
+    "bank-customer",
+    "bank-payment",
+    "bank-transaction",
+    "bank-fraud",
+    "bank-authentication",
+    "lb-clients"
+   ],
+   "outcome": {
+    "judged": true,
+    "observed": [
+     "bank-account",
+     "bank-authentication",
+     "bank-customer",
+     "bank-fraud",
+     "bank-transaction",
+     "lb-clients"
+    ],
+    "hits": [
+     "bank-account",
+     "bank-authentication",
+     "bank-customer",
+     "bank-fraud",
+     "bank-transaction",
+     "lb-clients"
+    ],
+    "missed": [],
+    "not_observed": [
+     "bank-payment"
+    ],
+    "precision": 0.857,
+    "recall": 1.0
+   },
+   "impact": {
+    "bank-account": 1.0,
+    "bank-customer": 1.0,
+    "bank-payment": 1.0,
+    "bank-transaction": 1.0,
+    "bank-fraud": 0.9,
+    "bank-authentication": 0.5,
+    "lb-clients": 0.4
+   },
+   "error_rate_rise": {
+    "bank-authentication": 0.0822,
+    "bank-customer": 1.0,
+    "bank-account": 1.0,
+    "bank-transaction": 1.0,
+    "bank-payment": 0.0,
+    "bank-fraud": 1.0,
+    "bank-notification": 0.0,
+    "lb-clients": 1.0
+   },
+   "spearman_impact_vs_error_rise": 0.33
+  }
+ ]
+}

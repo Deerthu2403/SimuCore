@@ -6,6 +6,7 @@ import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { freshness, useTwin } from "../twin/store";
+import { useImpact } from "../twin/impact";
 import { currentReach, useView } from "../twin/view";
 import { cameraState, CameraRig } from "./CameraRig";
 import { LabelMover, Labels, labelState } from "./Labels";
@@ -24,11 +25,14 @@ const LEVELS = [
 
 // ------------------------------------------------------------------ twin -> world
 let synced: unknown = null;
+let simulated: unknown = null;
 function syncWorld(): void {
   const m = useTwin.getState().mirror;
-  if (!m || m === synced) return;
+  const sim = useImpact.getState().simulation;
+  if (!m || (m === synced && sim === simulated)) return;
   synced = m;
-  world.sync(m);
+  simulated = sim;
+  world.sync(m, sim);
 }
 function syncView(): void {
   const v = useView.getState();
@@ -46,6 +50,11 @@ useTwin.subscribe((s, old) => {
   syncView();
 });
 useView.subscribe(syncView);
+useImpact.subscribe((s, old) => {
+  if (s.simulation === old.simulation) return;
+  syncWorld();
+  syncView();
+});
 
 export function usePrefersReducedMotion(): boolean {
   const [reduced, set] = useState(() => matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -283,7 +292,7 @@ function installHook(camera: PerspectiveCamera, el: HTMLCanvasElement, info: Web
       v.set(n.x, n.size.h * 0.55, n.z);
       return {
         status: n.status, color: `#${n.color.getHexString()}`, load: n.load, visible: n.visible,
-        highlight: n.highlight, x: n.x, z: n.z, sinceChange: world.clock - n.flashAt, anomaly: n.anomaly, risk: n.risk, screen: screen(),
+        highlight: n.highlight, x: n.x, z: n.z, sinceChange: world.clock - n.flashAt, anomaly: n.anomaly, risk: n.risk, impact: n.impact, role: n.role, screen: screen(),
       };
     },
     wire: (id: string, t = 0.5) => {
@@ -292,7 +301,7 @@ function installHook(camera: PerspectiveCamera, el: HTMLCanvasElement, info: Web
       pointOn(w, t, v);
       return {
         status: w.status, flow: w.flow, failing: w.failing, phase: w.phase, visible: w.visible,
-        highlight: w.highlight, screen: screen(),
+        highlight: w.highlight, propagation: w.propagation, step: w.step, screen: screen(),
       };
     },
     wires: () => world.wires.map((w) => w.id),

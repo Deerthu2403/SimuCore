@@ -3,11 +3,14 @@ import { search } from "../twin/graph";
 import { ago, clock, STATUS, TYPE } from "../twin/format";
 import { iconOf } from "../twin/icons";
 import { useFreshness, useTwin, type Toast } from "../twin/store";
+import { useImpact } from "../twin/impact";
 import { STATUSES, type Status } from "../twin/types";
 import { useView, type Preset } from "../twin/view";
 import { Alerts, EventList, useAlerts } from "./Events";
 import { AI_COLOR } from "../twin/ai";
 import { AiPanel } from "./Ai";
+import { ImpactPanel } from "./Impact";
+import { IMPACT_COLOR } from "../twin/impact";
 import { useNow } from "./hooks";
 import { Button, Icon, StatusChip } from "./Icon";
 import { Tabs } from "./Inspector";
@@ -212,6 +215,7 @@ export function Legend() {
           {STATUSES.map((s) => <div key={s}><dt><StatusChip status={s} small /></dt><dd>{LOOK[s]}</dd></div>)}
           <div><dt><Icon name="anomaly" size={13} color={AI_COLOR.anomaly} /> anomaly</dt><dd>ring of moving dashes: unusual now (Isolation Forest)</dd></div>
           <div><dt><Icon name="forecast" size={13} color={AI_COLOR.risk} /> prediction</dt><dd>arc, as long as the failure or degradation is probable within 2 minutes (XGBoost)</dd></div>
+          <div><dt><Icon name="graph" size={13} color={IMPACT_COLOR} /> impact</dt><dd>outer band: solid = confirmed, hatched = predicted only (dependency graph); waves = where a failure starts; pulses along the connections show the propagation path</dd></div>
           <div><dt>Moving lights</dt><dd>requests; more and faster with more traffic (logarithmic), red = failing</dd></div>
           <div><dt>Blinking rows</dt><dd>activity of the servers, from the measured load</dd></div>
           <div><dt>Bar at the edge</dt><dd>measured load, 0 to 100 %</dd></div>
@@ -237,15 +241,19 @@ export function Drawer() {
   const n = useAlerts().length;
   const anomalies = useTwin((s) => s.mirror?.summary.anomalies.length ?? 0);
   const predicted = useTwin((s) => s.mirror?.summary.predicted.length ?? 0);
+  const affected = useTwin((s) => s.mirror?.summary.propagation.affected ?? 0);
+  const simulated = useImpact((s) => !!s.simulation);
   return (
-    <section className={`panel bottom ${tab === "ai" ? "tall" : ""}`} aria-label="Alerts and events" data-testid="drawer">
+    <section className={`panel bottom ${tab === "ai" || tab === "impact" ? "tall" : ""}`} aria-label="Alerts and events" data-testid="drawer">
       <Tabs value={tab} onChange={(t) => set({ bottomTab: t })} items={[
         ["alerts", <>Alerts <span className={`count ${n ? "hot" : ""}`} data-testid="alert-count">{n}</span></>],
         ["events", "Event history"],
         ["ai", <>AI insights <span className="count" data-testid="ai-count" title={`${anomalies} anomalies, ${predicted} predictive warnings`}>
           <Icon name="anomaly" size={11} color={AI_COLOR.anomaly} />{anomalies} <Icon name="forecast" size={11} color={AI_COLOR.risk} />{predicted}</span></>],
+        ["impact", <>Failure impact <span className="count" data-testid="impact-count" title={simulated ? "a simulation is shown" : `${affected} components affected`}>
+          <Icon name="graph" size={11} color={IMPACT_COLOR} />{simulated ? "sim" : affected}</span></>],
       ]} />
-      <div className="scroll">{tab === "alerts" ? <Alerts /> : tab === "events" ? <EventList /> : <AiPanel />}</div>
+      <div className="scroll">{tab === "alerts" ? <Alerts /> : tab === "events" ? <EventList /> : tab === "ai" ? <AiPanel /> : <ImpactPanel />}</div>
     </section>
   );
 }

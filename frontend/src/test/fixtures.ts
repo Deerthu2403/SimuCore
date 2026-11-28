@@ -4,7 +4,7 @@ export function component(id: string, over: Partial<TwinComponent> & { type?: Co
   return {
     id, type: "microservice", name: `${id} Service`, description: "", criticality: 3, status: "healthy",
     status_since: null, previous_status: null, reason: "", findings: [], root_causes: [], metrics: {},
-    data_quality: "complete", attributes: {}, dependencies: { depends_on: [], dependents: [] }, insight: null,
+    data_quality: "complete", attributes: {}, dependencies: { depends_on: [], dependents: [] }, insight: null, impact: null,
     display: { layer: "application", group: "bank", order: 0, size: 3, load: null, attention: false }, ...over,
   };
 }
@@ -13,7 +13,7 @@ export function link(source: string, target: string, kind: LinkKind = "calls", o
   return {
     id: `${source}->${target}`, source, target, kind, mode: "required", weight: 1, purpose: "", status: "healthy",
     status_since: null, reason: "", active: false, metrics: {}, data_quality: "complete",
-    display: { flow: 0, attention: false }, ...over,
+    display: { flow: 0, attention: false, propagation: 0, propagation_step: null }, ...over,
   };
 }
 
@@ -32,6 +32,7 @@ export function message(
     summary: type === "heartbeat" ? null : {
       overall: "healthy" as Status, components: components.length, by_status: {}, by_type: {}, links: links.length,
       links_failed: 0, needs_attention: [], ai: "live", anomalies: [], predicted: [],
+      propagation: { origins: [], since: null, level: "none", affected: 0, affected_severe: 0, expected_affected: 0, business_impact: 0, event_id: null },
     },
     components, links, transitions: [],
   };

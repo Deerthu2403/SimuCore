@@ -1,6 +1,7 @@
 import { Box3, Color, Ray, Vector3 } from "three";
 import { STATUS } from "../twin/format";
 import { isAnomalous, riskOf } from "../twin/ai";
+import { impactOf, propagationOf, ROLE_CODE, type Simulation } from "../twin/impact";
 import type { Mirror } from "../twin/mirror";
 import type { ComponentType, LinkKind, Status, TwinComponent } from "../twin/types";
 import type { Reach } from "../twin/graph";
@@ -47,6 +48,10 @@ export interface Node {
   toAnomaly: number;
   risk: number;
   toRisk: number;
+  /** Failure propagation: estimated impact 0..1, and 0 none / 1 predicted / 2 confirmed / 3 origin. */
+  impact: number;
+  toImpact: number;
+  role: number;
 }
 
 export interface Wire {
@@ -64,6 +69,10 @@ export interface Wire {
   toVisible: number;
   highlight: number;
   toHighlight: number;
+  /** Impact a failure carries along it, and its place in the chain (1 = next to the failure). */
+  propagation: number;
+  toPropagation: number;
+  step: number;
   /** Control points: start, two handles, end. */
   p: Float32Array;
 }
@@ -107,7 +116,8 @@ export class World {
   private first = true;
   private lastView: ViewInput | null = null;
 
-  sync(m: Mirror): void {
+  /** ``sim``: a simulated failure, shown instead of the twin's own estimate. */
+  sync(m: Mirror, sim: Simulation | null = null): void {
     const sameStructure = this.nodes.size === m.componentIds.length && this.wires.length === m.linkIds.length
       && m.componentIds.every((i) => this.nodes.has(i)) && m.linkIds.every((i, n) => this.wires[n].id === i);
     if (!sameStructure) this.rebuild(m);
@@ -121,14 +131,22 @@ export class World {
       n.toLoad = loadOf(c);
       n.toAnomaly = isAnomalous(c) ? c.insight!.anomaly!.score : 0;
       n.toRisk = riskOf(c);
+      const i = impactOf(c, sim);
+      n.toImpact = i ? i.impact : 0;
+      n.role = i ? ROLE_CODE[i.role] : 0;
     }
     for (const w of this.wires) {
       const k = m.links[w.id];
       w.status = k.status;
       w.toFlow = k.display.flow;
       w.failing = k.metrics.failure_rate ?? 0;
+      const p = propagationOf(k, sim);
+      w.toPropagation = p.impact;
+      w.step = p.step ?? 0;
     }
     this.settled = false;
+    // which cables are shown depends on the propagation; the scene re-runs the view after every
+    // message anyway, so only a change of structure needs it here
     if (!sameStructure && this.lastView) this.view(this.lastView);
   }
 
@@ -150,6 +168,7 @@ export class World {
         toHighlight: 0, flashAt: known && known.status === c.status ? known.flashAt : -10,
         bankService: String(c.attributes.service ?? ""),
         anomaly: known?.anomaly ?? 0, toAnomaly: 0, risk: known?.risk ?? 0, toRisk: 0,
+        impact: known?.impact ?? 0, toImpact: 0, role: known?.role ?? 0,
       });
     }
     const oldWires = new Map(this.wires.map((w) => [w.id, w]));
@@ -162,6 +181,7 @@ export class World {
         status: k.status, flow: known?.flow ?? 0, toFlow: k.display.flow,
         failing: k.metrics.failure_rate ?? 0, phase: known?.phase ?? hash(id),
         visible: known?.visible ?? 0, toVisible: structural ? 0 : 1, highlight: 0, toHighlight: 0,
+        propagation: known?.propagation ?? 0, toPropagation: 0, step: known?.step ?? 0,
         p: new Float32Array(12),
       };
     });
@@ -188,7 +208,7 @@ export class World {
       const structural = !FLOW_KINDS.has(w.kind);
       const touches = (id: string | null) => id !== null && (w.source.id === id || w.target.id === id);
       const ends = Math.min(w.source.toVisible, w.target.toVisible);
-      let show = v.reach ? v.reach.links.has(w.id) : !structural || v.structural || touches(v.selected);
+      let show = v.reach ? v.reach.links.has(w.id) : !structural || v.structural || touches(v.selected) || w.toPropagation > 0;
       if (w.id === v.selectedLink) show = true;
       const aside = !v.reach && (v.selected !== null || v.selectedLink !== null)
         && !touches(v.selected) && w.id !== v.selectedLink;
@@ -217,18 +237,21 @@ export class World {
       n.load = n.toLoad < 0 ? -1 : ease(Math.max(0, n.load), n.toLoad, dt, rate(3));
       n.anomaly = ease(n.anomaly, n.toAnomaly, dt, rate(6));
       n.risk = ease(n.risk, n.toRisk, dt, rate(6));
+      n.impact = ease(n.impact, n.toImpact, dt, rate(5));
       const to = COLORS[n.status];
       const c = n.color;
       c.r = ease(c.r, to.r, dt, rate(9));
       c.g = ease(c.g, to.g, dt, rate(9));
       c.b = ease(c.b, to.b, dt, rate(9));
-      busy ||= n.anomaly !== n.toAnomaly || n.risk !== n.toRisk || n.visible !== n.toVisible || n.highlight !== n.toHighlight || n.load !== n.toLoad
+      busy ||= n.anomaly !== n.toAnomaly || n.risk !== n.toRisk || n.impact !== n.toImpact || n.visible !== n.toVisible || n.highlight !== n.toHighlight || n.load !== n.toLoad
         || c.r !== to.r || c.g !== to.g || c.b !== to.b;
     }
     for (const w of this.wires) {
       w.visible = ease(w.visible, w.toVisible, dt, rate(6));
       w.highlight = ease(w.highlight, w.toHighlight, dt, rate(12));
       w.flow = ease(w.flow, w.toFlow, dt, rate(2));
+      w.propagation = ease(w.propagation, w.toPropagation, dt, rate(5));
+      busy ||= w.propagation !== w.toPropagation;
       // Faster with more traffic; integrated, so that a change of speed never makes particles jump.
       if (motion) w.phase = (w.phase + dt * (0.1 + 0.3 * w.flow)) % 1;
     }
